@@ -4,6 +4,8 @@ class Interface(object):
     def __init__(self):
         self.controller = Controller()
         self.state = b''
+        self.allowed_states = [b'', b'START', b'INIT', b'READY', b'RUN',
+            b'CONFIGURATION', b'SUBROUTINE', b'STOP']
         self.controller.request_state()
 
     def run(self):
@@ -20,9 +22,13 @@ class Interface(object):
                         for message in messages:
                             self.controller.handle(message)
                 if self.state != self.controller.state:
-                    print('State update. New state: %s' %
-                            self.controller.state)
-                    self.state = self.controller.state
+                    if self.controller.state in self.allowed_states:
+                        print('State update. New state: %s' %
+                                self.controller.state)
+                        self.state = self.controller.state
+                    else:
+                        raise RuntimeError('Invalid state received: %s'
+                                % self.controller.state)
             except KeyboardInterrupt:
                 message = input('\rEnter a message: ')
                 if message == 'CLIENTS':
@@ -30,7 +36,10 @@ class Interface(object):
                 elif message == 'STATE':
                     new_state_str = input('Enter the new state: ')
                     new_state = new_state_str.encode('utf-8')
-                    self.controller.request_state_change(new_state)
+                    if new_state in self.allowed_states:
+                        self.controller.request_state_change(new_state)
+                    else:
+                        print('ERROR: Invalid state.')
                 elif message == 'GET STATE':
                     self.controller.request_state()
                 elif message == 'CURRENT STATE':
