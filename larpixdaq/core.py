@@ -1,9 +1,17 @@
 from moddaq import Core
 import os
+import argparse
 
-core = Core('tcp://*:5550', 'tcp://*:5551')
-core.address_service.bind_base = 'tcp://*'
-core.address_service.connect_base = 'tcp://localhost:'
+parser = argparse.ArgumentParser()
+parser.add_argument('address', default='tcp://127.0.0.1',
+        help='base address for ZMQ connections')
+
+args = parser.parse_args()
+base_address = args.address + ':'
+
+core = Core(base_address + '5550', base_address + '5551')
+core.address_service.bind_base = base_address
+core.address_service.connect_base = base_address
 filepath = os.path.join(os.path.dirname(__file__), 'architecture.cfg')
 architecture = core.address_service.loadFile(filepath)
 core.run()
