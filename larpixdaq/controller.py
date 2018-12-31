@@ -1,4 +1,11 @@
+from __future__ import absolute_import
+from __future__ import print_function
 from moddaq import Controller
+
+try:
+    input = raw_input
+except NameError:
+    pass
 
 class Interface(object):
     def __init__(self):
