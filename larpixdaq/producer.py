@@ -4,10 +4,11 @@ from moddaq import Producer
 import larpix.larpix as larpix
 
 try:
+    producer = Producer('producer-aggregator', name='LArPix board',
+            group='BOARD')
     board = larpix.Controller()
     board._serial._keep_open = True
-    producer = Producer('LArPix board', 'BOARD', 'producer-aggregator')
-    state = b''
+    state = ''
     producer.request_state()
     while True:
         producer.receive(0)
