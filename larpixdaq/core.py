@@ -14,4 +14,9 @@ core.address_service.bind_base = base_address
 core.address_service.connect_base = base_address
 filepath = os.path.join(os.path.dirname(__file__), 'architecture.cfg')
 architecture = core.address_service.loadFile(filepath)
+
+allowed_states = ['', 'START', 'INIT', 'READY', 'RUN',
+        'CONFIGURATION', 'SUBROUTINE', 'STOP']
+core.isStateAllowed = lambda x: x in allowed_states
+
 core.run()
