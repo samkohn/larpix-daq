@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 from __future__ import print_function
+import argparse
 from moddaq import Controller
 
 try:
@@ -8,8 +9,14 @@ except NameError:
     pass
 
 class Interface(object):
-    def __init__(self):
-        self.controller = Controller()
+    def __init__(self, base_url):
+        core_address = base_url + ':5550'
+        response_address = base_url + ':5551'
+        kwargs = {
+                'core_address': core_address,
+                'response_address': response_address,
+        }
+        self.controller = Controller(**kwargs)
         self.state = ''
         self.controller.request_state()
 
@@ -45,7 +52,10 @@ class Interface(object):
                     self.controller.send_message('PRINT', message)
 
 try:
-    interface = Interface()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-a', '--address', default='tcp://127.0.0.1')
+    args = parser.parse_args()
+    interface = Interface(args.address)
     interface.run()
 finally:
     interface.controller.cleanup()
