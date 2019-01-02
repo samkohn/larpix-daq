@@ -1,11 +1,22 @@
 from __future__ import absolute_import
 from __future__ import print_function
+import argparse
 from moddaq import Producer
 import larpix.larpix as larpix
 
 try:
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-a', '--address', default='tcp://127.0.0.1')
+    args = parser.parse_args()
+    base_url = args.address
+    core_address = base_url + ':5550'
+    response_address = base_url + ':5551'
+    kwargs = {
+            'core_address': core_address,
+            'response_address': response_address,
+    }
     producer = Producer('producer-aggregator', name='LArPix board',
-            group='BOARD')
+            group='BOARD', **kwargs)
     board = larpix.Controller()
     board._serial._keep_open = True
     state = ''
