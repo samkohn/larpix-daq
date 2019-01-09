@@ -12,10 +12,6 @@ args = parser.parse_args()
 base_address = args.address + ':'
 
 core = Core(base_address + '5550', base_address + '5551')
-core.address_service.bind_base = base_address
-core.address_service.connect_base = base_address
-filepath = os.path.join(os.path.dirname(__file__), 'architecture.cfg')
-architecture = core.address_service.loadFile(filepath)
 
 allowed_states = ['', 'START', 'INIT', 'READY', 'RUN',
         'CONFIGURATION', 'SUBROUTINE', 'STOP']
