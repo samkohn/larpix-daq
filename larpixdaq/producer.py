@@ -34,12 +34,11 @@ try:
             state = producer.state
         if state == b'RUN':
             logging.debug('about to run')
-            board.run(0.5, 'run')
+            data = board.serial_read(0.5)
             logging.debug('just took data')
-            packets = b''.join(p.bytes() for p in board.reads[-1])
             metadata = {'name': 'LArPix board', 'timestamp':
                     time.time()}
-            logging.debug('producing packets: %s...' % repr(packets[:20]))
+            logging.debug('producing packets: %s...' % repr(data))
             producer.produce(metadata, packets)
 finally:
     producer.cleanup()
