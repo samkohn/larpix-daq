@@ -39,7 +39,7 @@ try:
             packets = b''.join(p.bytes() for p in board.reads[-1])
             metadata = {'name': 'LArPix board', 'timestamp':
                     time.time()}
-            logging.debug('producing packets: %s...' % packets[:20])
+            logging.debug('producing packets: %s...' % repr(packets[:20]))
             producer.produce(metadata, packets)
 finally:
     producer.cleanup()
