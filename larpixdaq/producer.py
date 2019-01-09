@@ -2,6 +2,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 import argparse
 import logging
+import time
 logging.basicConfig(level=logging.DEBUG)
 from moddaq import Producer
 import larpix.larpix as larpix
@@ -25,14 +26,16 @@ try:
     state = ''
     producer.request_state()
     while True:
-        producer.receive(0)
+        producer.receive(1)
         if state != producer.state:
             print('State update: New state: %s' % producer.state)
             state = producer.state
         if state == b'RUN':
             board.run(0.5, 'run')
             packets = b''.join(p.bytes() for p in board.reads[-1])
+            metadata = {'name': 'LArPix board', 'timestamp':
+                    time.time()}
             logging.debug('producing packets: %s...' % packets[:20])
-            producer.produce(packets)
+            producer.produce(metdata, packets)
 finally:
     producer.cleanup()
