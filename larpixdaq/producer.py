@@ -39,6 +39,6 @@ try:
             metadata = {'name': 'LArPix board', 'timestamp':
                     time.time()}
             logging.debug('producing packets: %s...' % repr(data))
-            producer.produce(metadata, packets)
+            producer.produce(metadata, data)
 finally:
     producer.cleanup()
