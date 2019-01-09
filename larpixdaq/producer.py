@@ -10,7 +10,7 @@ try:
     parser = argparse.ArgumentParser()
     parser.add_argument('address')
     parser.add_argument('--core', default='tcp://127.0.0.1')
-    parser.add_argument('-d', '--debug')
+    parser.add_argument('-d', '--debug', action='store_true')
     args = parser.parse_args()
     if args.debug:
         logging.basicConfig(level=logging.DEBUG)
