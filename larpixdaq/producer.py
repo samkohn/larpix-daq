@@ -21,18 +21,37 @@ try:
     kwargs = {
             'core_address': core_address,
             'response_address': response_address,
+            'actions': {
+                'begin_run': 'start taking data',
+                'end_run': 'stop taking data',
+            },
     }
     producer = Producer(address, name='LArPix board', group='BOARD', **kwargs)
     board = larpix.Controller()
     board._serial._keep_open = True
     state = ''
+    run = False
+    def begin_run():
+        global run, state
+        if state == 'RUN':
+            run = True
+            return 'success'
+        else:
+            return 'ERROR: must be in state \'RUN\''
+    def end_run():
+        global run
+        run = False
+        return 'success'
+    producer.actions['begin_run'] = begin_run
+    producer.actions['end_run'] = end_run
     producer.request_state()
     while True:
         producer.receive(0.4)
         if state != producer.state:
             print('State update: New state: %s' % producer.state)
             state = producer.state
-        if state == b'RUN':
+        logging.debug('run = %s', run)
+        if state == 'RUN' and run:
             logging.debug('about to run')
             data = board.serial_read(0.5)
             logging.debug('just took data')
