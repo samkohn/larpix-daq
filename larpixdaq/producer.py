@@ -59,39 +59,47 @@ try:
         Update the chip configuration stored in software.
 
         '''
-        global board
-        chipid = int(chipid_str)
-        value = int(value_str)
-        channel = int(channel_str) if channel_str else None
-        chip = board.get_chip(chipid, 0)
-        if channel is None:
-            setattr(chip.config, name_str, value)
-        else:
-            getattr(chip.config, name_str)[channel] = value
-        logging.debug('updated configuration')
-        logging.debug(chip)
-        logging.debug(getattr(chip.config, name_str))
-        return 'success'
+        try:
+            global board
+            chipid = int(chipid_str)
+            value = int(value_str)
+            channel = int(channel_str) if channel_str else None
+            chip = board.get_chip(chipid, 0)
+            if channel is None:
+                setattr(chip.config, name_str, value)
+            else:
+                getattr(chip.config, name_str)[channel] = value
+            logging.debug('updated configuration')
+            logging.debug(chip)
+            logging.debug(getattr(chip.config, name_str))
+            return 'success'
+        except Exception as e:
+            logging.exception(e)
+            return 'ERROR: %s' % e
     def write_config(chipid_str, registers_str='', write_read_str='',
             message=''):
         '''
         Send the given configuration to the board.
 
         '''
-        global board
-        chipid = int(chipid_str)
-        chip = board.get_chip(chipid, 0)
-        if registers_str:  # treat as int or list
-            registers = ast.literal_eval(registers_str)
-        else:
-            registers = None
-        if not write_read_str:
-            write_read = 0
-        if not message:
-            message = None
-        board.write_configuration(chip, registers, write_read,
-                message)
-        return 'success'
+        try:
+            global board
+            chipid = int(chipid_str)
+            chip = board.get_chip(chipid, 0)
+            if registers_str:  # treat as int or list
+                registers = ast.literal_eval(registers_str)
+            else:
+                registers = None
+            if not write_read_str:
+                write_read = 0
+            if not message:
+                message = None
+            board.write_configuration(chip, registers, write_read,
+                    message)
+            return 'success'
+        except Exception as e:
+            logging.exception(e)
+            return 'ERROR: %s' % e
     producer.actions['begin_run'] = begin_run
     producer.actions['end_run'] = end_run
     producer.actions['configure_chip'] = configure_chip
