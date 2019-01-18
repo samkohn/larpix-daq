@@ -3,6 +3,7 @@ from __future__ import print_function
 import argparse
 import logging
 import time
+import ast
 from moddaq import Producer
 import larpix.larpix as larpix
 
@@ -21,9 +22,15 @@ try:
     kwargs = {
             'core_address': core_address,
             'response_address': response_address,
-            'actions': {
+            'action_docs': {
                 'begin_run': 'start taking data',
                 'end_run': 'stop taking data',
+                'configure_chip': '''configure_chip(chipid, name, value,
+                    channel='')
+                    Update the configuration stored in software.''',
+                'write_config': '''write_config(chipid, registers='',
+                    write_read='', message='')
+                    Send the configuration from software to the board.''',
             },
     }
     producer = Producer(address, name='LArPix board', group='BOARD', **kwargs)
@@ -47,8 +54,48 @@ try:
         global run
         run = False
         return 'success'
+    def configure_chip(chipid_str, name_str, value_str, channel_str=''):
+        '''
+        Update the chip configuration stored in software.
+
+        '''
+        global board
+        chipid = int(chipid_str)
+        value = int(value_str)
+        channel = int(channel_str) if channel_str else None
+        chip = board.get_chip(chipid, 0)
+        if channel is None:
+            setattr(chip.config, name_str, value)
+        else:
+            getattr(chip.config, name_str)[channel] = value
+        logging.debug('updated configuration')
+        logging.debug(chip)
+        logging.debug(getattr(chip.config, name_str))
+        return 'success'
+    def write_config(chipid_str, registers_str='', write_read_str='',
+            message=''):
+        '''
+        Send the given configuration to the board.
+
+        '''
+        global board
+        chipid = int(chipid_str)
+        chip = board.get_chip(chipid, 0)
+        if registers_str:  # treat as int or list
+            registers = ast.literal_eval(registers_str)
+        else:
+            registers = None
+        if not write_read_str:
+            write_read = 0
+        if not message:
+            message = None
+        board.write_configuration(chip, registers, write_read,
+                message)
+        return 'success'
     producer.actions['begin_run'] = begin_run
     producer.actions['end_run'] = end_run
+    producer.actions['configure_chip'] = configure_chip
+    producer.actions['write_config'] = write_config
     producer.request_state()
     while True:
         producer.receive(0.4)
