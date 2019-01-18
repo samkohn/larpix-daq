@@ -27,7 +27,12 @@ try:
             },
     }
     producer = Producer(address, name='LArPix board', group='BOARD', **kwargs)
-    board = larpix.Controller()
+    try:
+        board = larpix.Controller()
+    except OSError:
+        board = larpix.Controller('test')
+        logging.info('Starting up larpix.Controller(\'test\')')
+    board.use_all_chips = True
     board._serial._keep_open = True
     state = ''
     run = False
