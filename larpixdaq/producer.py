@@ -5,6 +5,7 @@ import logging
 import time
 import ast
 from moddaq import Producer
+import larpix.quickstart as larpix_quickstart
 import larpix.larpix as larpix
 
 try:
@@ -31,6 +32,11 @@ try:
                 'write_config': '''write_config(chipid, registers='',
                     write_read='', message='')
                     Send the configuration from software to the board.''',
+                'read_config': '''read_config(chipid, registers='',
+                    message='')
+                    Read the configuration from the board.''',
+                'quickstart': '''quickstart(board_name='pcb-1')
+                    Start up the board into a quiescent state.''',
             },
     }
     producer = Producer(address, name='LArPix board', group='BOARD', **kwargs)
@@ -100,10 +106,51 @@ try:
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
+
+    def read_config(chipid_str, registers_str='', message=''):
+        '''
+        Read configurations from the board.
+
+        '''
+        try:
+            global board
+            chipid = int(chipid_str)
+            chip = board.get_chip(chipid, 0)
+            if registers_str:  # treat as int or list
+                registers = ast.literal_eval(registers_str)
+            else:
+                registers = None
+            if not message:
+                message = None
+            board.read_configuration(chip, registers, message=message)
+            packets = board.reads[-1]
+            result = '\n'.join(str(p) for p in packets if p.packet_type
+                    == p.CONFIG_READ_PACKET)
+            return result
+        except Exception as e:
+            logging.exception(e)
+            return 'ERROR: %s' % e
+
+    def quickstart(board_name='pcb-1'):
+        '''
+        Start up the board and configure chips to a quiescent state.
+
+        '''
+        try:
+            global board
+            board = larpix_quickstart.quickcontroller(board_name)
+            result = 'success'
+            return result
+        except Exception as e:
+            logging.exception(e)
+            return 'ERROR: %s' % e
+
     producer.actions['begin_run'] = begin_run
     producer.actions['end_run'] = end_run
     producer.actions['configure_chip'] = configure_chip
     producer.actions['write_config'] = write_config
+    producer.actions['read_config'] = read_config
+    producer.actions['quickstart'] = quickstart
     producer.request_state()
     while True:
         producer.receive(0.4)
