@@ -88,26 +88,11 @@ class Operator(object):
         '''
         pass
 
-    def data_rate(self):
+    def data_rate(self, start_time, end_time, chip_or_channel):
         '''
-        Return the data rate over all LArPix ASICs for the last minute,
-        as a list of 60 one-second rates, in packets/sec.
-
-        '''
-        pass
-
-    def data_rate_chip(self, chip):
-        '''
-        Return the data rate for the given LArPix ASIC for the last
-        minute, as a list of 60 one-second rates, in packets/sec.
-
-        '''
-        pass
-
-    def data_rate_channel(self, channel):
-        '''
-        Return the data rate for the given channel/pixel for the last
-        minute, as a list of 60 one-second rates, in packets/sec.
+        Return the data rate for the specified ASIC or channel between
+        ``start_time`` and ``end_time``, as long as it's within the
+        current run.
 
         '''
         pass
