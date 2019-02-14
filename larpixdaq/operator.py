@@ -9,6 +9,10 @@ class Operator(object):
     start/end runs, load/validate configurations, run calibrations,
     examine data samples and data rates, etc.
 
+    The methods that have ``chip``, ``channel``, or ``chip_or_channel``
+    as parameters take in ``Chip`` or ``Channel`` objects that specify
+    a unique physical ASIC or electronics channel.
+
     '''
 
     def __init__(self):
