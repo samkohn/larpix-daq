@@ -2,6 +2,7 @@
 The operator interface for the LArPix DAQ system.
 
 '''
+import moddaq
 
 class Operator(object):
     '''
@@ -21,7 +22,11 @@ class Operator(object):
         self.run_number = 0
         self.is_running = False
         self.routines = []
-        self.configurations = []
+        self.configurations = {}
+        self._controller = moddaq.Controller(
+            core_address='tcp://127.0.0.1:5550',
+            response_address='tcp://127.0.0.1:5551'
+        )
 
 
     ### Configurations
@@ -31,7 +36,12 @@ class Operator(object):
         Load the given configuration onto the LArPix ASICs.
 
         '''
-        pass
+        for (chipid, iochain) in self.chips:
+            self._controller.send_action('LArPix board',
+                    'configure_name', [name, chipid, iochain])
+        for (chipid, iochain) in self.chips:
+            self._controller.send_action('LArPix board',
+                    'write_config', [chipid])
 
     def validate_configuration(self):
         '''
@@ -88,6 +98,14 @@ class Operator(object):
         '''
         Stop taking physics data, deactivate online data monitoring and
         analytics, and finalize the offline storage.
+
+        '''
+        pass
+
+    def run_info(self):
+        '''
+        Fetch current run info such as run number, start time, average
+        data rate, etc.
 
         '''
         pass

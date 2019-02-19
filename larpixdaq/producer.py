@@ -4,8 +4,10 @@ import argparse
 import logging
 import time
 import ast
+import json
 from moddaq import Producer
 import larpix.quickstart as larpix_quickstart
+from larpix.fakeio import FakeIO
 import larpix.larpix as larpix
 
 try:
@@ -29,6 +31,11 @@ try:
                 'configure_chip': '''configure_chip(chipid, name, value,
                     channel='')
                     Update the configuration stored in software.''',
+                'bulk_configure': '''bulk_configure(configuration_json)
+                    Update the configuration stored in software.''',
+                'configure_name': '''configure_name(name, chipid,
+                    iochain)
+                    Load the named configuration into software.''',
                 'write_config': '''write_config(chipid, registers='',
                     write_read='', message='')
                     Send the configuration from software to the board.''',
@@ -40,15 +47,15 @@ try:
             },
     }
     producer = Producer(address, name='LArPix board', group='BOARD', **kwargs)
-    try:
-        board = larpix.Controller()
-    except OSError:
-        board = larpix.Controller('test')
-        logging.info('Starting up larpix.Controller(\'test\')')
+    board = larpix.Controller()
+    board.io = FakeIO()
     board.use_all_chips = True
-    board._serial._keep_open = True
     state = ''
     run = False
+    configurations = {
+            'startup': 'startup.json',
+            'quiet': 'quiet.json',
+    }
     def begin_run():
         global run, state
         if state == 'RUN':
@@ -78,6 +85,34 @@ try:
             logging.debug('updated configuration')
             logging.debug(chip)
             logging.debug(getattr(chip.config, name_str))
+            return 'success'
+        except Exception as e:
+            logging.exception(e)
+            return 'ERROR: %s' % e
+    def bulk_config(configuration_json):
+        '''
+        Update the configuration stored in software.
+
+        '''
+        try:
+            global board
+            bulk_config = json.loads(configuration_json)
+            for chipid, iochain in bulk_config:
+                chip = board.get_chip(chipid, iochain)
+                chip.config.from_dict(bulk_config[chipid, iochain])
+            return 'success'
+        except Exception as e:
+            logging.exception(e)
+            return 'ERROR: %s' % e
+    def configure_name(name, chipid, iochain):
+        '''
+        Load the named configuration into software.
+
+        '''
+        try:
+            global board
+            chip = board.get_chip(chipid, iochain)
+            chip.config.load(configurations[name])
             return 'success'
         except Exception as e:
             logging.exception(e)
@@ -151,6 +186,7 @@ try:
     producer.actions['write_config'] = write_config
     producer.actions['read_config'] = read_config
     producer.actions['quickstart'] = quickstart
+    producer.actions['configure_name'] = configure_name
     producer.request_state()
     while True:
         producer.receive(0.4)
