@@ -42,8 +42,27 @@ try:
                 'read_config': '''read_config(chipid, registers='',
                     message='')
                     Read the configuration from the board.''',
+                'validate_config': '''validate_config(chipid)
+                    Read the given chip's configuration and compare it
+                    to the configuration stored in software. Returns
+                    True or False.''',
+                'learn_config': '''learn_config(chipid)
+                    Read the given chip's configuration and use it to
+                    overwrite the configuration stored in software.''',
+                'fetch_configs': '''fetch_configs()
+                    Return a list of available configurations.''',
                 'quickstart': '''quickstart(board_name='pcb-1')
                     Start up the board into a quiescent state.''',
+                'list_routines': '''list_routines()
+                    Return a list of available routines and their call
+                    signatures.''',
+                'run_routine': '''run_routine(name, *args)
+                    Run the specified routine with the specified
+                    arguments. Call ``list_routines`` to learn the
+                    argument lists for each available routine.''',
+                'sleep': '''sleep(time_in_sec)
+                    Wait a certain amount of time and then reply with
+                    'success'.''',
             },
     }
     producer = Producer(address, name='LArPix board', group='BOARD', **kwargs)
@@ -55,6 +74,10 @@ try:
     configurations = {
             'startup': 'startup.json',
             'quiet': 'quiet.json',
+    }
+    routines = {
+            'quickstart': 'quickstart()',
+            'leakage_current_scan': 'leakage_current_scan(chips)',
     }
     def begin_run():
         global run, state
@@ -165,7 +188,60 @@ try:
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
+    def validate_config(chipid_str):
+        '''
+        Read configurations from the board and compare to those stored
+        in software, returning True if they're equal.
 
+        '''
+        try:
+            global board
+            chipid = int(chipid_str)
+            chip = board.get_chip(chipid, 0)
+            if isinstance(board.io, FakeIO):
+                board.io.queue.append((chip.get_configuration_packets(
+                larpix.Packet.CONFIG_WRITE_PACKET), b'some bytes'))
+            result = board.verify_configuration(chip_id=chipid)
+            return result
+        except Exception as e:
+            logging.exception(e)
+            return 'ERROR: %s' % e
+    def learn_config(chipid_str):
+        '''
+        Read configurations from the board and use the values to
+        overwrite the configuration in software.
+
+        '''
+        try:
+            global board
+            chipid = int(chipid_str)
+            chip = board.get_chip(chipid, 0)
+            if isinstance(board.io, FakeIO):
+                packets = chip.get_configuration_packets(
+                        larpix.Packet.CONFIG_WRITE_PACKET)
+                board.io.queue.append((packets, b'some bytes'))
+            board.read_configuration(chip)
+            updates_dict = {}
+            for packet in board.reads[-1]:
+                if packet.packet_type == packet.CONFIG_READ_PACKET:
+                    updates_dict[packet.register_address] = (
+                            packet.register_data)
+            chip.config.from_dict_registers(updates_dict)
+            return 'success'
+        except Exception as e:
+            logging.exception(e)
+            return 'ERROR: %s' % e
+    def fetch_configs():
+        '''
+        Return the ``configurations`` dict's keys.
+
+        '''
+        try:
+            result = list(configurations.keys())
+            return result
+        except Exception as e:
+            logging.exception(e)
+            return 'ERROR: %s' % e
     def quickstart(board_name='pcb-1'):
         '''
         Start up the board and configure chips to a quiescent state.
@@ -173,20 +249,65 @@ try:
         '''
         try:
             global board
-            board = larpix_quickstart.quickcontroller(board_name)
+            board = larpix_quickstart.quickcontroller(board_name,
+                    io=board.io)
             result = 'success'
             return result
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
+    def list_routines():
+        '''
+        List the available routines.
 
+        '''
+        try:
+            return routines
+        except Exception as e:
+            logging.exception(e)
+            return 'ERROR: %s' % e
+    def run_routine(name, *args):
+        '''
+        Run the given routine.
+
+        '''
+        try:
+            result = routine_calls[name](*args)
+            return result
+        except Exception as e:
+            logging.exception(e)
+            return 'ERROR: %s' % e
+    def sleep(time_in_sec):
+        '''
+        Sleep and return success.
+
+        '''
+        try:
+            delay = int(time_in_sec)
+            time.sleep(delay)
+            return 'success'
+        except Exception as e:
+            logging.exception(e)
+            return 'ERROR: %s' % e
+
+    routine_calls = {
+            'quickstart': quickstart,
+            'leakage_current_scan': lambda chips: ('Ran scan on %s' %
+                chips),
+    }
     producer.actions['begin_run'] = begin_run
     producer.actions['end_run'] = end_run
     producer.actions['configure_chip'] = configure_chip
     producer.actions['write_config'] = write_config
     producer.actions['read_config'] = read_config
+    producer.actions['validate_config'] = validate_config
+    producer.actions['learn_config'] = learn_config
     producer.actions['quickstart'] = quickstart
     producer.actions['configure_name'] = configure_name
+    producer.actions['fetch_configs'] = fetch_configs
+    producer.actions['list_routines'] = list_routines
+    producer.actions['run_routine'] = run_routine
+    producer.actions['sleep'] = sleep
     producer.request_state()
     while True:
         producer.receive(0.4)

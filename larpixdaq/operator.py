@@ -29,6 +29,20 @@ class Operator(object):
         )
 
 
+    def process_incoming_messages(self):
+        '''
+        Read through messages received from the Core and update members
+        accordingly.
+
+        '''
+        again = True
+        while again:
+            messages = self._controller.receive()
+            again = bool(messages)
+            if again:
+                for message in messages:
+                    self._controller.handle(message)
+
     ### Configurations
 
     def load_configuration(self, name):
@@ -36,12 +50,16 @@ class Operator(object):
         Load the given configuration onto the LArPix ASICs.
 
         '''
+        action_ids = []
         for (chipid, iochain) in self.chips:
-            self._controller.send_action('LArPix board',
+            new_id = self._controller.send_action('LArPix board',
                     'configure_name', [name, chipid, iochain])
+            action_ids.append(new_id)
         for (chipid, iochain) in self.chips:
-            self._controller.send_action('LArPix board',
+            new_id = self._controller.send_action('LArPix board',
                     'write_config', [chipid])
+            action_ids.append(new_id)
+        return action_ids
 
     def validate_configuration(self):
         '''
@@ -49,7 +67,9 @@ class Operator(object):
         ``True`` if the actual values match those stored in software.
 
         '''
-        pass
+        for (chipid, iochain) in self.chips:
+            action_id = self._controller.send_action('LArPix board',
+                    'validate_config', [chipid])
 
     def learn_configuration(self):
         '''
@@ -57,14 +77,21 @@ class Operator(object):
         the actual values in software, replacing the existing values.
 
         '''
-        pass
+        action_ids = []
+        for (chipid, iochain) in self.chips:
+            action_id = self._controller.send_action('LArPix board',
+            'learn_config', [chipid])
+            action_ids.append(action_id)
+        return action_ids
 
     def fetch_configurations(self):
         '''
         Return a list of available configurations.
 
         '''
-        pass
+        action_id = self._controller.send_action('LArPix board',
+                'fetch_configs', [])
+        return action_id
 
 
     ### Calibrations
@@ -74,14 +101,18 @@ class Operator(object):
         Return a list of routines/calibrations.
 
         '''
-        pass
+        action_id = self._controller.send_action('LArPix board',
+                'list_routines', [])
+        return action_id
 
-    def run_routine(self, name):
+    def run_routine(self, name, *args):
         '''
         Run the given routine and return the routine's output.
 
         '''
-        pass
+        action_id = self._controller.send_action('LArPix board',
+                'run_routine', [name] + list(args))
+        return action_id
 
 
     ### Physics runs
