@@ -28,6 +28,9 @@ class Operator(object):
             response_address='tcp://127.0.0.1:5551'
         )
 
+    def close(self):
+        self._controller.cleanup()
+
 
     def process_incoming_messages(self):
         '''
@@ -123,7 +126,10 @@ class Operator(object):
         analytics, and store the data in offline storage.
 
         '''
-        pass
+        self._controller.request_state_change('RUN')
+        action_id = self._controller.send_action('LArPix board',
+                'begin_run', [])
+        return action_id
 
     def end_physics_run(self):
         '''
@@ -131,7 +137,10 @@ class Operator(object):
         analytics, and finalize the offline storage.
 
         '''
-        pass
+        action_id = self._controller.send_action('LArPix board',
+                'end_run', [])
+        self._controller.request_state_change('READY')
+        return action_id
 
     def run_info(self):
         '''

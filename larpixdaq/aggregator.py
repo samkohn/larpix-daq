@@ -3,13 +3,13 @@ import argparse
 import time
 
 from moddaq import Aggregator
-from larpix.larpix import Controller
+from larpix.larpix import Controller, Packet
 
 try:
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--debug', action='store_true')
     parser.add_argument('address', help='the address to bind to')
-    parser.add_argument('--core')
+    parser.add_argument('--core', default='tcp://127.0.0.1')
     args = parser.parse_args()
     if args.debug:
         logging.basicConfig(level=logging.DEBUG)
@@ -21,7 +21,11 @@ try:
             connections=['BOARD'], **kwargs)
     aggregator.request_state
     state = aggregator.state
-    parse_data = Controller.parse_input
+    #parse_data = Controller.parse_input
+    def parse_data(packet_bytes):
+        splits = packet_bytes.split(b'\xAA\xAA')
+        packets = [Packet(b) for b in splits]
+        return packets
     while True:
         messages = aggregator.receive()
         for message in messages:

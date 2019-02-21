@@ -316,12 +316,24 @@ try:
             state = producer.state
         logging.debug('run = %s', run)
         if state == 'RUN' and run:
-            logging.debug('about to run')
-            data = board.serial_read(0.5)
+            if not board.io.is_listening:
+                logging.debug('about to start listening')
+                board.start_listening()
+            if isinstance(board.io, FakeIO):
+                p = larpix.Packet()
+                p.timestamp = int(time.time()) % 100000
+                p.assign_parity()
+                board.io.queue.append(([p], p.bytes() + b'\x00'))
+            data = board.read()
             logging.debug('just took data')
             metadata = {'name': 'LArPix board', 'timestamp':
                     time.time()}
-            logging.debug('producing packets: %s...' % repr(data[:20]))
-            producer.produce(metadata, data)
+            to_produce = b'\xAA\xAA'.join(p.bytes() for p in data[0])
+            logging.debug('producing packets: %s...' %
+                    repr(to_produce[:20]))
+            producer.produce(metadata, to_produce)
+        else:
+            if board.io.is_listening:
+                board.stop_listening()
 finally:
     producer.cleanup()
