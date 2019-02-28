@@ -46,6 +46,14 @@ class Operator(object):
                 for message in messages:
                     self._controller.handle(message)
 
+    def retrieve_result(self, action_id):
+        '''
+        Retrieve the result of the action associated with the given
+        action_id.
+
+        '''
+        return self._controller.complete_actions[action_id]
+
     ### Configurations
 
     def load_configuration(self, name):
