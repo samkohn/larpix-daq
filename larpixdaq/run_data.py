@@ -10,7 +10,7 @@ import base64
 from moddaq import Consumer, protocol
 from larpix.larpix import Packet
 
-from larpixdaq.packetformat import toBytes, fromBytes
+import larpixdaq.packetformat as pformat
 
 class RunData(object):
     '''
@@ -60,7 +60,7 @@ class RunData(object):
 
         '''
         try:
-            return base64.b64encode(toBytes(self.packets)).decode()
+            return pformat.to_unicode_coding(self.packets)
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
@@ -73,7 +73,7 @@ class RunData(object):
                     if self.start_time == 0:
                         self.start_time = time.time()
                     _, metadata, data = message
-                    packets = fromBytes(data)
+                    packets = pformat.fromBytes(data)
                     self.packets.extend(packets)
 
 
