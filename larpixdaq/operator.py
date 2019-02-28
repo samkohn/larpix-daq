@@ -157,7 +157,9 @@ class Operator(object):
         current run.
 
         '''
-        pass
+        action_id = self._controller.send_action('Run data',
+                'data_rate', [])
+        return action_id
 
     def fetch_packets(self, start_time, end_time, chip_or_channel):
         '''
