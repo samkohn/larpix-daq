@@ -5,6 +5,7 @@ Record packets from the current run and compute various statistics.
 
 import time
 import logging
+import base64
 
 from moddaq import Consumer, protocol
 from larpix.larpix import Packet
@@ -23,12 +24,16 @@ class RunData(object):
                     'data_rate': '''data_rate()
                         Return the average data rate for the packets
                         received so far.''',
+                    'packets': '''packets()
+                        Return the packets as a bytestream with a 2-byte
+                        delimiter of 0xAAAA.''',
                 }
 
         }
         self._consumer = Consumer(name='Run data', connections=['AGGREGATOR'],
                 **consumer_args)
         self._consumer.actions['data_rate'] = self._data_rate
+        self._consumer.actions['packets'] = self._packets
         self.packets = []
         self.start_time = 0
         return
@@ -42,6 +47,19 @@ class RunData(object):
             npackets = len(self.packets)
             time_elapsed = time.time() - self.start_time
             return str(npackets/time_elapsed)
+        except Exception as e:
+            logging.exception(e)
+            return 'ERROR: %s' % e
+
+    def _packets(self):
+        '''
+        Return a bytestream of all the packets received, converted to a
+        string in base64 encoding.
+
+        '''
+        try:
+            return base64.b64encode(b'\xAA\xAA'.join(p.bytes() for p in
+                    self.packets)).decode()
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e

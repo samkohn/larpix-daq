@@ -168,7 +168,8 @@ class Operator(object):
         the current run.
 
         '''
-        pass
+        action_id = self._controller.send_action('Run data', 'packets', [])
+        return action_id
 
     def enable_channel(self, channel):
         '''
