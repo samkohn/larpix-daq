@@ -10,6 +10,8 @@ import base64
 from moddaq import Consumer, protocol
 from larpix.larpix import Packet
 
+from larpixdaq.packetformat import toBytes, fromBytes
+
 class RunData(object):
     '''
     Record packets from the current run and compute various statistics.
@@ -58,17 +60,10 @@ class RunData(object):
 
         '''
         try:
-            return base64.b64encode(b'\xAA\xAA'.join(p.bytes() for p in
-                    self.packets)).decode()
+            return base64.b64encode(toBytes(self.packets)).decode()
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
-
-    @staticmethod
-    def parse_data(packet_bytes):
-        splits = packet_bytes.split(b'\xAA\xAA')
-        packets = [Packet(b) for b in splits]
-        return packets
 
     def run(self):
         while True:
@@ -78,7 +73,7 @@ class RunData(object):
                     if self.start_time == 0:
                         self.start_time = time.time()
                     _, metadata, data = message
-                    packets = self.parse_data(data)
+                    packets = fromBytes(data)
                     self.packets.extend(packets)
 
 

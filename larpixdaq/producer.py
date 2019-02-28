@@ -10,6 +10,8 @@ import larpix.quickstart as larpix_quickstart
 from larpix.fakeio import FakeIO
 import larpix.larpix as larpix
 
+from larpixdaq.packetformat import toBytes
+
 try:
     parser = argparse.ArgumentParser()
     parser.add_argument('address')
@@ -328,7 +330,7 @@ try:
             logging.debug('just took data')
             metadata = {'name': 'LArPix board', 'timestamp':
                     time.time()}
-            to_produce = b'\xAA\xAA'.join(p.bytes() for p in data[0])
+            to_produce = toBytes(data[0])
             logging.debug('producing packets: %s...' %
                     repr(to_produce[:20]))
             producer.produce(metadata, to_produce)

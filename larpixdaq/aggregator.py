@@ -5,6 +5,8 @@ import time
 from moddaq import Aggregator
 from larpix.larpix import Controller, Packet
 
+from larpixdaq.packetformat import fromBytes
+
 try:
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--debug', action='store_true')
@@ -21,11 +23,6 @@ try:
             connections=['BOARD'], **kwargs)
     aggregator.request_state
     state = aggregator.state
-    #parse_data = Controller.parse_input
-    def parse_data(packet_bytes):
-        splits = packet_bytes.split(b'\xAA\xAA')
-        packets = [Packet(b) for b in splits]
-        return packets
     while True:
         messages = aggregator.receive(1)
         for message in messages:
@@ -33,7 +30,7 @@ try:
                 _, metadata, data = message
                 print('received %d bytes' % len(data))
                 print('%s' % repr(data[:20]))
-                packets = parse_data(data)
+                packets = fromBytes(data)
                 print('received %d packets' % len(packets))
                 metadata['agg_timestamp'] = time.time()
                 aggregator.broadcast(metadata, data)
