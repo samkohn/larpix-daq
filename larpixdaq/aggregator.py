@@ -27,7 +27,7 @@ try:
         packets = [Packet(b) for b in splits]
         return packets
     while True:
-        messages = aggregator.receive()
+        messages = aggregator.receive(1)
         for message in messages:
             if message[0] == 'DATA':
                 _, metadata, data = message

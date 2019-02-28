@@ -54,7 +54,7 @@ class RunData(object):
 
     def run(self):
         while True:
-            messages = self._consumer.receive()
+            messages = self._consumer.receive(1)
             for message in messages:
                 if message[0] == 'DATA':
                     if self.start_time == 0:
