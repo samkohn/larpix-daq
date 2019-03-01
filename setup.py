@@ -8,5 +8,5 @@ setup(
         author='Sam Kohn',
         author_email='skohn@lbl.gov',
         packages=find_packages(),
-        install_requires=['moddaq']
+        install_requires=['moddaq', 'flask >=1.0.0']
 )

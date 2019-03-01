@@ -1,2 +1,3 @@
 *.egg-info
 datalog
+__pycache__
