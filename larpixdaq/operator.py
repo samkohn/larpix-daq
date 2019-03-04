@@ -23,36 +23,8 @@ class Operator(object):
         self.is_running = False
         self.routines = []
         self.configurations = {}
-        self._controller = moddaq.Controller(
-            core_address='tcp://127.0.0.1:5550',
-            response_address='tcp://127.0.0.1:5551'
-        )
+        self._controller = moddaq.Controller('tcp://127.0.0.1:5551')
 
-    def close(self):
-        self._controller.cleanup()
-
-
-    def process_incoming_messages(self):
-        '''
-        Read through messages received from the Core and update members
-        accordingly.
-
-        '''
-        again = True
-        while again:
-            messages = self._controller.receive()
-            again = bool(messages)
-            if again:
-                for message in messages:
-                    self._controller.handle(message)
-
-    def retrieve_result(self, action_id):
-        '''
-        Retrieve the result of the action associated with the given
-        action_id.
-
-        '''
-        return self._controller.complete_actions[action_id]
 
     ### Configurations
 
@@ -135,9 +107,12 @@ class Operator(object):
 
         '''
         self._controller.request_state_change('RUN')
-        action_id = self._controller.send_action('LArPix board',
+        self._controller.send_action('LArPix board',
                 'begin_run', [])
-        return action_id
+        result1 = self._controller.receive(None)
+        result2 = self._controller.receive(None)
+        result3 = self._controller.receive(None)
+        return result1, result2, result3
 
     def end_physics_run(self):
         '''
@@ -145,10 +120,13 @@ class Operator(object):
         analytics, and finalize the offline storage.
 
         '''
-        action_id = self._controller.send_action('LArPix board',
+        self._controller.send_action('LArPix board',
                 'end_run', [])
         self._controller.request_state_change('READY')
-        return action_id
+        result1 = self._controller.receive(None)
+        result2 = self._controller.receive(None)
+        result3 = self._controller.receive(None)
+        return result1, result2, result3
 
     def run_info(self):
         '''
