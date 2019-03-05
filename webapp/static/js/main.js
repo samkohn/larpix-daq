@@ -30,12 +30,77 @@ $(document).ready(function() {
 });
 
 class ActionTrigger extends React.Component {
+  constructor(props) {
+    super(props);
+  }
+
+  onClick() {
+    socket.emit(this.props.socket_event, this.props.socket_msg);
+    this.props.onClick(this.props.name);
+  }
+
   render() {
-    return <button onClick={this.props.onClick}>{this.props.name}</button>;
+    return <button onClick={this.onClick.bind(this)}>{this.props.name}</button>;
   }
 }
 
+class ActionMessage extends React.Component {
+  render() {
+    return <li>{this.props.action_name}: {this.props.result}</li>;
+  }
+}
+
+class ActionResultsList extends React.Component {
+  render() {
+    const actionResults = this.props.results.map((r) => (
+          <ActionMessage
+            key={r.action_name}
+            action_name={r.action_name}
+            result={r.result} />
+    ));
+    return <ul>{actionResults}</ul>;
+  }
+}
+
+class ActionDashboard extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {results: []};
+  }
+  onTriggerClick(name) {
+    this.setState((state, props) => state.results.push({action_name: name}));
+  }
+  render() {
+    const actionTriggers = this.props.actions.map((a) => (
+          <ActionTrigger
+            name={a.action_name}
+            socket_event={a.socket_event}
+            socket_msm={a.socket_msg}
+            onClick={this.onTriggerClick.bind(this)} />
+    ));
+    const actionTriggersList = actionTriggers.map((a) => (
+          <li key={a.props.name}>{a}</li>
+    ));
+    return (
+        <div>
+          <ul>{actionTriggersList}</ul><br /><ActionResultsList results={this.state.results} />
+        </div>);
+  }
+}
+const actions = [
+  {
+    action_name: 'start_run',
+    socket_event: 'command/start-run',
+    socket_msg: '',
+  },
+  {
+    action_name: 'end_run',
+    socket_event: 'command/end-run',
+    socket_msg: '',
+  },
+];
+
 ReactDOM.render(
-    <ActionTrigger name="start-run" onClick={()=>socket.emit('command/start-run', '')} />,
+    <ActionDashboard actions={actions}/>,
     document.getElementById('daq-root')
 );
