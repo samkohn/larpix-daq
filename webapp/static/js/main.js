@@ -1,5 +1,7 @@
+'use strict';
+
+var socket = io();
 $(document).ready(function() {
-  var socket = io();
   console.log(socket);
   socket.on('/', function(msg) {
     console.log(msg);
@@ -27,3 +29,13 @@ $(document).ready(function() {
   });
 });
 
+class ActionTrigger extends React.Component {
+  render() {
+    return <button onClick={this.props.onClick}>{this.props.name}</button>;
+  }
+}
+
+ReactDOM.render(
+    <ActionTrigger name="start-run" onClick={()=>socket.emit('command/start-run', '')} />,
+    document.getElementById('daq-root')
+);
