@@ -2,7 +2,7 @@
 Formatter for LArPix data packets + medatadata to/from bytestreams.
 
 '''
-import base64
+import json
 
 from larpix.larpix import Packet
 
@@ -22,16 +22,12 @@ def to_unicode_coding(packets):
     Return an encoding of the packet bytes as a Unicode string.
 
     '''
-    packet_bytes = toBytes(packets)
-    b64bytes = base64.b64encode(packet_bytes)
-    return b64bytes.decode()
+    return json.dumps([p.export() for p in packets])
 
 def from_unicode_coding(unicode_stream):
     '''
     Convert the Unicode stream back into Packets.
 
     '''
-    b64bytes = unicode_stream.encode()
-    packet_bytes = base64.b64decode(b64bytes)
-    return fromBytes(packet_bytes)
+    raise NotImplementedError()
 
