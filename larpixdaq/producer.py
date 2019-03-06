@@ -29,8 +29,6 @@ try:
             'response_address': response_address,
             'heartbeat_time_ms': 300,
             'action_docs': {
-                'begin_run': 'start taking data',
-                'end_run': 'stop taking data',
                 'configure_chip': '''configure_chip(chipid, name, value,
                     channel='')
                     Update the configuration stored in software.''',
@@ -82,17 +80,6 @@ try:
             'quickstart': 'quickstart()',
             'leakage_current_scan': 'leakage_current_scan(chips)',
     }
-    def begin_run():
-        global run, state
-        if state == 'RUN':
-            run = True
-            return 'success'
-        else:
-            return 'ERROR: must be in state \'RUN\''
-    def end_run():
-        global run
-        run = False
-        return 'success'
     def configure_chip(chipid_str, name_str, value_str, channel_str=''):
         '''
         Update the chip configuration stored in software.
@@ -298,8 +285,6 @@ try:
             'leakage_current_scan': lambda chips: ('Ran scan on %s' %
                 chips),
     }
-    producer.actions['begin_run'] = begin_run
-    producer.actions['end_run'] = end_run
     producer.actions['configure_chip'] = configure_chip
     producer.actions['write_config'] = write_config
     producer.actions['read_config'] = read_config
@@ -317,8 +302,7 @@ try:
         if state != producer.state:
             print('State update: New state: %s' % producer.state)
             state = producer.state
-        logging.debug('run = %s', run)
-        if state == 'RUN' and run:
+        if state == 'RUN':
             if not board.io.is_listening:
                 logging.debug('about to start listening')
                 board.start_listening()

@@ -100,6 +100,15 @@ class Operator(object):
 
     ### Physics runs
 
+    def prepare_physics_run(self):
+        '''
+        Enter the "READY" DAQ state so that all DAQ components are ready
+        to begin the physics run.
+
+        '''
+        self._controller.request_state_change('READY')
+        return self._controller.receive(None)
+
     def begin_physics_run(self):
         '''
         Begin taking physics data, activate online data monitoring and
@@ -107,12 +116,8 @@ class Operator(object):
 
         '''
         self._controller.request_state_change('RUN')
-        self._controller.send_action('LArPix board',
-                'begin_run', [])
-        result1 = self._controller.receive(None)
-        result2 = self._controller.receive(None)
-        result3 = self._controller.receive(None)
-        return result1, result2, result3
+        return self._controller.receive(None)
+
 
     def end_physics_run(self):
         '''
@@ -120,13 +125,8 @@ class Operator(object):
         analytics, and finalize the offline storage.
 
         '''
-        self._controller.send_action('LArPix board',
-                'end_run', [])
         self._controller.request_state_change('READY')
-        result1 = self._controller.receive(None)
-        result2 = self._controller.receive(None)
-        result3 = self._controller.receive(None)
-        return result1, result2, result3
+        return self._controller.receive(None)
 
     def run_info(self):
         '''
