@@ -16,5 +16,6 @@ core = Core(base_address + '5550', base_address + '5551')
 allowed_states = ['', 'START', 'INIT', 'READY', 'RUN',
         'SUBROUTINE', 'STOP']
 core.isStateAllowed = lambda x: x in allowed_states
+core.state = 'START'
 
 core.run()
