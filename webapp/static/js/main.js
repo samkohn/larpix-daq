@@ -180,6 +180,11 @@ function onClientUpdate(cb) {
 
 const actions = [
   {
+    action_name: 'prepare_run',
+    socket_event: 'command/prepare-run',
+    enabled_states: ['INIT', 'START'],
+  },
+  {
     action_name: 'start_run',
     socket_event: 'command/start-run',
     enabled_states: ['READY'],
@@ -188,6 +193,16 @@ const actions = [
     action_name: 'end_run',
     socket_event: 'command/end-run',
     enabled_states: ['RUN'],
+  },
+  {
+    action_name: 'data_rate',
+    socket_event: 'command/data-rate',
+    enabled_states: ['READY', 'RUN'],
+  },
+  {
+    action_name: 'packets',
+    socket_event: 'command/packets',
+    enabled_states: ['READY', 'RUN'],
   },
 ];
 
