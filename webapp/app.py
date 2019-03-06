@@ -65,6 +65,9 @@ def create_app():
 
 def bg_task(daq):
     while True:
+        daq._controller.request_clients()
+        result = daq._controller.receive(None)
+        socketio.emit('client-update', result)
         daq._controller.request_state()
         result = daq._controller.receive(None)
         socketio.emit('state-update', result)

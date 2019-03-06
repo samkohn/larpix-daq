@@ -56,6 +56,32 @@ class DAQState extends React.Component {
   }
 }
 
+class DAQClient extends React.Component {
+  render() {
+    return <li>{this.props.name}</li>;
+  }
+}
+
+class DAQClientList extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {clients: []};
+    onClientUpdate(
+        (u) => this.setState({clients: u.message.result})
+    );
+  }
+  render() {
+    const clientList = this.state.clients.map((name) =>
+        <DAQClient key={name} name={name} />);
+    return (
+        <div>
+          <h2>Client list</h2>
+          <ul>{clientList}</ul>
+        </div>
+    );
+  }
+}
+
 class ActionMessage extends React.Component {
   render() {
     return <li>{this.props.action_name}: {this.props.result}</li>;
@@ -101,6 +127,8 @@ class ActionDashboard extends React.Component {
         <div>
           <DAQState state={this.state.daqState} />
           <br />
+          <DAQClientList />
+          <br />
           <ul>{actionTriggersList}</ul>
           <br />
           <ActionResultsList results={this.state.results} />
@@ -110,6 +138,12 @@ class ActionDashboard extends React.Component {
 
 function onStateUpdate(cb) {
   socket.on('state-update', function(update) {
+    cb(update);
+  });
+};
+
+function onClientUpdate(cb) {
+  socket.on('client-update', function(update) {
     cb(update);
   });
 };
@@ -129,7 +163,9 @@ const actions = [
   },
 ];
 
+const clients = ['LArPix Board', 'Aggregator', 'Run Data'];
+
 ReactDOM.render(
-    <ActionDashboard actions={actions}/>,
+    <ActionDashboard actions={actions} clients={clients} />,
     document.getElementById('daq-root')
 );
