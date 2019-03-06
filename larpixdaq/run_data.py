@@ -5,7 +5,6 @@ Record packets from the current run and compute various statistics.
 
 import time
 import logging
-import base64
 
 from moddaq import Consumer, protocol
 from larpix.larpix import Packet
