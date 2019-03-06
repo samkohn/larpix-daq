@@ -84,7 +84,17 @@ class DAQClientList extends React.Component {
 
 class ActionMessage extends React.Component {
   render() {
-    return <li>{this.props.action_name}: {this.props.result}</li>;
+    const r = this.props.result;
+    const name = r.name;
+    if (r.header == '_PRELIM') {
+      return <li>Awaiting more info for: {name}</li>;
+    }
+    else if (r.message.metadata) {
+      return <li>{name}: {r.header} {r.message.result} ({JSON.stringify(r.message.metadata)})</li>;
+    }
+    else {
+      return <li>{name}: {r.header} {r.message.result}</li>;
+    }
   }
 }
 
@@ -92,11 +102,10 @@ class ActionResultsList extends React.Component {
   render() {
     const actionResults = this.props.results.map((r) => (
           <ActionMessage
-            key={r.action_name}
-            action_name={r.action_name}
-            result={r.result} />
+            key={r.id}
+            result={r} />
     ));
-    return <ul>{actionResults}</ul>;
+    return <ol>{actionResults}</ol>;
   }
 }
 
@@ -104,19 +113,33 @@ class ActionDashboard extends React.Component {
   constructor(props) {
     super(props);
     this.state = {results: [], daqState: 'INIT'};
+    onActionUpdate(
+        (u) => this.setState(function(state, props) {
+          const old_result = state.results[u.id];
+          state.results[u.id] = {...old_result, ...u};
+        })
+    );
     onStateUpdate(
         (u) => this.setState({daqState: u.message.result})
     );
   }
   onTriggerClick(name) {
-    this.setState((state, props) => state.results.push({action_name: name}));
+    const first_description = {
+      header: '_PRELIM',
+      id: name,
+      name: name,
+      message: {
+        result: '',
+      },
+    };
+    this.setState((state, props) => state.results.push(first_description));
   }
   render() {
     const actionTriggers = this.props.actions.map((a) => (
           <ActionTrigger
             name={a.action_name}
             socket_event={a.socket_event}
-            socket_msm={a.socket_msg}
+            socket_msg={this.state.results.length}
             disabled={a.enabled_states.indexOf(this.state.daqState) < 0}
             onClick={this.onTriggerClick.bind(this)} />
     ));
@@ -136,6 +159,13 @@ class ActionDashboard extends React.Component {
   }
 }
 
+function onActionUpdate(cb) {
+  socket.on('action-update', function(update) {
+    console.log(update);
+    cb(update);
+    });
+};
+
 function onStateUpdate(cb) {
   socket.on('state-update', function(update) {
     cb(update);
@@ -152,13 +182,11 @@ const actions = [
   {
     action_name: 'start_run',
     socket_event: 'command/start-run',
-    socket_msg: '',
     enabled_states: ['READY'],
   },
   {
     action_name: 'end_run',
     socket_event: 'command/end-run',
-    socket_msg: '',
     enabled_states: ['RUN'],
   },
 ];

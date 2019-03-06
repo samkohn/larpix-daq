@@ -32,14 +32,16 @@ def create_app():
         daq = get_daq()
         result = daq.begin_physics_run()
         logging.debug(result)
-        return json.dumps(result)
+        result['id'] = msg
+        emit('action-update', result)
 
     @socketio.on('command/end-run')
     def end_run(msg):
         daq = get_daq()
         result = daq.end_physics_run()
         logging.debug(result)
-        return json.dumps(result)
+        result['id'] = msg
+        emit('action-update', result)
 
     @app.route('/command/actionid/<actionid>')
     def get_action_id(actionid):
