@@ -40,7 +40,13 @@ class ActionTrigger extends React.Component {
   }
 
   render() {
-    return <button onClick={this.onClick.bind(this)}>{this.props.name}</button>;
+    return (
+        <button
+            onClick={this.onClick.bind(this)}
+            disabled={this.props.disabled}>
+          {this.props.name}
+        </button>
+    );
   }
 }
 
@@ -85,6 +91,7 @@ class ActionDashboard extends React.Component {
             name={a.action_name}
             socket_event={a.socket_event}
             socket_msm={a.socket_msg}
+            disabled={a.enabled_states.indexOf(this.state.daqState) < 0}
             onClick={this.onTriggerClick.bind(this)} />
     ));
     const actionTriggersList = actionTriggers.map((a) => (
@@ -112,11 +119,13 @@ const actions = [
     action_name: 'start_run',
     socket_event: 'command/start-run',
     socket_msg: '',
+    enabled_states: ['READY'],
   },
   {
     action_name: 'end_run',
     socket_event: 'command/end-run',
     socket_msg: '',
+    enabled_states: ['RUN'],
   },
 ];
 
