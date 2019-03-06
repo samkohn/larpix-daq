@@ -27,6 +27,7 @@ try:
     kwargs = {
             'core_address': core_address,
             'response_address': response_address,
+            'heartbeat_time_ms': 300,
             'action_docs': {
                 'begin_run': 'start taking data',
                 'end_run': 'stop taking data',

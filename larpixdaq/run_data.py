@@ -22,6 +22,7 @@ class RunData(object):
         consumer_args = {
                 'core_address': core + ':5550',
                 'response_address': core + ':5551',
+                'heartbeat_time_ms': 300,
                 'action_docs': {
                     'data_rate': '''data_rate()
                         Return the average data rate for the packets

@@ -18,6 +18,7 @@ try:
     kwargs = {
             'core_address': args.core + ':5550',
             'response_address': args.core + ':5551',
+            'heartbeat_time_ms': 300,
     }
     aggregator = Aggregator(args.address, name='LArPix aggregator',
             connections=['BOARD'], **kwargs)
