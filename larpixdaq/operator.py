@@ -143,9 +143,9 @@ class Operator(object):
         current run.
 
         '''
-        action_id = self._controller.send_action('Run data',
-                'data_rate', [])
-        return action_id
+        self._controller.send_action('Run data', 'data_rate', [])
+        for _ in range(2):
+            yield self._controller.receive(None)
 
     def fetch_packets(self, start_time, end_time, chip_or_channel):
         '''
@@ -154,8 +154,9 @@ class Operator(object):
         the current run.
 
         '''
-        action_id = self._controller.send_action('Run data', 'packets', [])
-        return action_id
+        self._controller.send_action('Run data', 'packets', [])
+        for _ in range(2):
+            yield self._controller.receive(None)
 
     def enable_channel(self, channel):
         '''
