@@ -11,6 +11,7 @@ from webapp.daq import get_daq
 from flask_socketio import SocketIO, emit
 
 socketio = SocketIO()
+bg_thread = None
 
 def create_app():
     app = Flask(__name__)
@@ -18,6 +19,13 @@ def create_app():
     @app.route('/')
     def hello():
         return render_template('index.html')
+
+    @socketio.on('connect')
+    def start_bg_thread():
+        global bg_thread
+        if bg_thread is None:
+            daq = get_daq()
+            socketio.start_background_task(bg_task, daq)
 
     @socketio.on('command/start-run')
     def start_run(msg):
@@ -54,4 +62,11 @@ def create_app():
     socketio.init_app(app)
 
     return app
+
+def bg_task(daq):
+    while True:
+        daq._controller.request_state()
+        result = daq._controller.receive(None)
+        socketio.emit('state-update', result)
+        socketio.sleep(0.5)
 

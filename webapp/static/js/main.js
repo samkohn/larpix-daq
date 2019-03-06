@@ -44,6 +44,12 @@ class ActionTrigger extends React.Component {
   }
 }
 
+class DAQState extends React.Component {
+  render() {
+    return <h1>State: {this.props.state}</h1>;
+  }
+}
+
 class ActionMessage extends React.Component {
   render() {
     return <li>{this.props.action_name}: {this.props.result}</li>;
@@ -65,7 +71,10 @@ class ActionResultsList extends React.Component {
 class ActionDashboard extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {results: []};
+    this.state = {results: [], daqState: 'INIT'};
+    onStateUpdate(
+        (u) => this.setState({daqState: u.message.result})
+    );
   }
   onTriggerClick(name) {
     this.setState((state, props) => state.results.push({action_name: name}));
@@ -83,10 +92,21 @@ class ActionDashboard extends React.Component {
     ));
     return (
         <div>
-          <ul>{actionTriggersList}</ul><br /><ActionResultsList results={this.state.results} />
+          <DAQState state={this.state.daqState} />
+          <br />
+          <ul>{actionTriggersList}</ul>
+          <br />
+          <ActionResultsList results={this.state.results} />
         </div>);
   }
 }
+
+function onStateUpdate(cb) {
+  socket.on('state-update', function(update) {
+    cb(update);
+  });
+};
+
 const actions = [
   {
     action_name: 'start_run',
