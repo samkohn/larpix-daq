@@ -120,6 +120,7 @@ class ActionDashboard extends React.Component {
     ));
     return (
         <div>
+          <img src="/static/larpix.png" width="100px"/>
           <DAQState state={this.state.daqState} />
           <br />
           <DAQClientList />
