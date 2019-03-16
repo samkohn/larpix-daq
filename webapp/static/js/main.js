@@ -84,15 +84,12 @@ class ActionResultsList extends React.Component {
 class ActionDashboard extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {results: [], daqState: 'INIT'};
+    this.state = {results: []};
     onActionUpdate(
         (u) => this.setState(function(state, props) {
           const old_result = state.results[u.id];
           state.results[u.id] = {...old_result, ...u};
         })
-    );
-    onStateUpdate(
-        (u) => this.setState({daqState: u.message.result})
     );
   }
   onTriggerClick(name) {
@@ -120,15 +117,33 @@ class ActionDashboard extends React.Component {
     ));
     return (
         <div>
-          <img src="/static/larpix.png" width="100px"/>
-          <DAQState state={this.state.daqState} />
-          <br />
-          <DAQClientList />
-          <br />
           <ul>{actionTriggersList}</ul>
           <br />
           <ActionResultsList results={this.state.results} />
         </div>);
+  }
+}
+
+class DAQPage extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {daqState: 'INIT'}
+    onStateUpdate(
+        (u) => this.setState({daqState: u.message.result})
+    );
+  }
+  render() {
+    return (
+        <div>
+          <img src="/static/larpix.png" width="100px"/>
+          <DAQState state={this.state.daqState} />
+          <br />
+          <DAQClientList />
+          <ActionDashboard
+            actions={this.props.actions}
+            daqState={this.state.daqState} />
+        </div>
+    );
   }
 }
 
@@ -179,9 +194,7 @@ const actions = [
   },
 ];
 
-const clients = ['LArPix Board', 'Aggregator', 'Run Data'];
-
 ReactDOM.render(
-    <ActionDashboard actions={actions} clients={clients} />,
+    <DAQPage actions={actions} />,
     document.getElementById('daq-root')
 );
