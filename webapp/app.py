@@ -33,7 +33,7 @@ def create_app():
         daq = get_daq()
         result = daq.prepare_physics_run()
         logging.debug(result)
-        result['id'] = msg
+        result['id'] = msg[0]
         emit('action-update', result)
 
     @socketio.on('command/start-run')
@@ -41,7 +41,7 @@ def create_app():
         daq = get_daq()
         result = daq.begin_physics_run()
         logging.debug(result)
-        result['id'] = msg
+        result['id'] = msg[0]
         emit('action-update', result)
 
     @socketio.on('command/end-run')
@@ -49,7 +49,7 @@ def create_app():
         daq = get_daq()
         result = daq.end_physics_run()
         logging.debug(result)
-        result['id'] = msg
+        result['id'] = msg[0]
         emit('action-update', result)
 
     @socketio.on('command/data-rate')
@@ -57,7 +57,7 @@ def create_app():
         daq = get_daq()
         for result in daq.data_rate(0, 0, 0):
             logging.debug(result)
-            result['id'] = msg
+            result['id'] = msg[0]
             emit('action-update', result)
 
     @socketio.on('command/packets')
@@ -65,7 +65,17 @@ def create_app():
         daq = get_daq()
         for result in daq.fetch_packets(0, 0, 0):
             logging.debug(result)
-            result['id'] = msg
+            result['id'] = msg[0]
+            emit('action-update', result)
+
+    @socketio.on('command/run_routine')
+    def run_routine(msg):
+        daq = get_daq()
+        result_id = msg[0]
+        routine_name = msg[1]
+        for result in daq.run_routine(routine_name):
+            logging.debug(result)
+            result['id'] = result_id
             emit('action-update', result)
 
     @app.route('/command/actionid/<actionid>')

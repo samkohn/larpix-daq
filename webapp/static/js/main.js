@@ -4,10 +4,50 @@ var socket = io();
 class ActionTrigger extends React.Component {
   constructor(props) {
     super(props);
+    if(this.props.type == 'select') {
+      this.state = {value: this.props.type_options[0]};
+    }
+  }
+
+  handleChange(new_value) {
+    this.setState({value: new_value});
+  }
+
+  onTriggerClick() {
+    const socket_msg = [this.props.socket_msg];
+    if(this.props.type == 'select') {
+      socket_msg.push(this.state.value);
+      console.log(socket_msg);
+    }
+    socket.emit(this.props.socket_event, socket_msg);
+    this.props.onButtonClick(this.props.name);
+  }
+
+  render() {
+    const button = (
+        <ActionTriggerButton
+          name={this.props.name}
+          disabled={this.props.disabled}
+          onClick={this.onTriggerClick.bind(this)} />
+    );
+    if(this.props.type == 'select') {
+      const select = (
+          <ActionTriggerSelect
+            options={this.props.type_options}
+            value={this.state.value}
+            handleChange={this.handleChange.bind(this)} />
+      );
+      return <div>{button} {select}</div>;
+    }
+    return button;
+  }
+}
+class ActionTriggerButton extends React.Component {
+  constructor(props) {
+    super(props);
   }
 
   onClick() {
-    socket.emit(this.props.socket_event, this.props.socket_msg);
     this.props.onClick(this.props.name);
   }
 
@@ -21,6 +61,25 @@ class ActionTrigger extends React.Component {
     );
   }
 }
+
+class ActionTriggerSelect extends React.Component {
+  onSelectChange(event) {
+    const new_value = event.target.value;
+    this.props.handleChange(new_value);
+  }
+  render() {
+    const options = this.props.options.map((o) =>
+        <option key={o} value={o}>{o}</option>
+    );
+    const select = (
+        <select value={this.props.value} onChange={this.onSelectChange.bind(this)}>
+          {options}
+        </select>
+    );
+    return select;
+  }
+}
+
 
 class DAQState extends React.Component {
   render() {
@@ -104,14 +163,19 @@ class ActionDashboard extends React.Component {
     this.setState((state, props) => state.results.push(first_description));
   }
   render() {
-    const actionTriggers = this.props.actions.map((a) => (
+    const obj = this;
+    const actionTriggers = this.props.actions.map(function(a) {
+      return (
           <ActionTrigger
             name={a.action_name}
             socket_event={a.socket_event}
-            socket_msg={this.state.results.length}
-            disabled={a.enabled_states.indexOf(this.state.daqState) < 0}
-            onClick={this.onTriggerClick.bind(this)} />
-    ));
+            socket_msg={obj.state.results.length}
+            disabled={a.enabled_states.indexOf(obj.props.daqState) < 0}
+            onButtonClick={obj.onTriggerClick.bind(obj)}
+            type={a.type}
+            type_options={a.type_options} />
+      );
+    });
     const actionTriggersList = actionTriggers.map((a) => (
           <li key={a.props.name}>{a}</li>
     ));
@@ -171,26 +235,41 @@ const actions = [
     action_name: 'prepare_run',
     socket_event: 'command/prepare-run',
     enabled_states: ['INIT', 'START'],
+    type: 'button',
   },
   {
     action_name: 'start_run',
     socket_event: 'command/start-run',
     enabled_states: ['READY'],
+    type: 'button',
   },
   {
     action_name: 'end_run',
     socket_event: 'command/end-run',
     enabled_states: ['RUN'],
+    type: 'button',
   },
   {
     action_name: 'data_rate',
     socket_event: 'command/data-rate',
     enabled_states: ['READY', 'RUN'],
+    type: 'button',
   },
   {
     action_name: 'packets',
     socket_event: 'command/packets',
     enabled_states: ['READY', 'RUN'],
+    type: 'button',
+  },
+  {
+    action_name: 'run_routine',
+    socket_event: 'command/run_routine',
+    enabled_states: ['INIT',  'READY', 'RUN', 'START'],
+    type: 'select',
+    type_options: [
+      'quickstart',
+      'leakage_current_scan',
+    ],
   },
 ];
 
