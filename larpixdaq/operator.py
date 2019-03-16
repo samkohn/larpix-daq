@@ -93,9 +93,10 @@ class Operator(object):
         Run the given routine and return the routine's output.
 
         '''
-        action_id = self._controller.send_action('LArPix board',
+        self._controller.send_action('LArPix board',
                 'run_routine', [name] + list(args))
-        return action_id
+        for _ in range(2):
+            yield self._controller.receive(None)
 
 
     ### Physics runs
