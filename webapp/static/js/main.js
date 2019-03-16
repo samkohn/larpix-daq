@@ -95,7 +95,7 @@ class ActionDashboard extends React.Component {
   onTriggerClick(name) {
     const first_description = {
       header: '_PRELIM',
-      id: name,
+      id: this.state.results.length,
       name: name,
       message: {
         result: '',
