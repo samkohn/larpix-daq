@@ -81,6 +81,24 @@ def create_app():
             result['id'] = result_id
             emit('action-update', result)
 
+    @socketio.on('command/configure_chip')
+    def configure_chip(msg):
+        daq = get_daq()
+        params = msg[1]
+        for result in daq.configure_chip(*params):
+            logging.debug(result)
+            result['id'] = msg[0]
+            emit('action-update', result)
+
+    @socketio.on('command/write_config')
+    def configure_chip(msg):
+        daq = get_daq()
+        params = msg[1]
+        for result in daq.write_configuration(*params):
+            logging.debug(result)
+            result['id'] = msg[0]
+            emit('action-update', result)
+
     @app.route('/command/actionid/<actionid>')
     def get_action_id(actionid):
         o = get_daq()
