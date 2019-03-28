@@ -356,6 +356,14 @@ const actions = [
     num_params: 1,
     params: ['chip'],
   },
+  {
+    action_name: 'verify_configuration',
+    socket_event: 'command/verify_config',
+    enabled_states: ['INIT', 'READY', 'RUN', 'START'],
+    type: 'button',
+    num_params: 1,
+    params: ['chip'],
+  },
 
 ];
 

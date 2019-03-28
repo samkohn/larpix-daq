@@ -48,7 +48,6 @@ class Operator(object):
         for _ in range(2):
             yield self._controller.receive(None)
 
-
     def load_configuration(self, name):
         '''
         Load the given configuration onto the LArPix ASICs.
@@ -65,15 +64,16 @@ class Operator(object):
             action_ids.append(new_id)
         return action_ids
 
-    def validate_configuration(self):
+    def validate_configuration(self, chip):
         '''
-        Read the configuration from all of the LArPix ASICs and return
-        ``True`` if the actual values match those stored in software.
+        Read the configuration from the specified LArPix ASIC and return
+        ``(True/False, {name: (actual, stored)})``.
 
         '''
-        for (chipid, iochain) in self.chips:
-            action_id = self._controller.send_action('LArPix board',
-                    'validate_config', [chipid])
+        self._controller.send_action('LArPix board', 'validate_config',
+                [chip])
+        for _ in range(2):
+            yield self._controller.receive(None)
 
     def learn_configuration(self):
         '''
