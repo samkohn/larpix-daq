@@ -68,6 +68,7 @@ class ActionTrigger extends React.Component {
     const button = (
         <ActionTriggerButton
           name={this.props.name}
+          key='button'
           disabled={this.props.disabled}
           onClick={this.onTriggerClick.bind(this)} />
     );
@@ -75,6 +76,7 @@ class ActionTrigger extends React.Component {
     if(this.props.type == 'select') {
       const select = (
           <ActionTriggerSelect
+            key='select'
             options={this.props.type_options}
             value={this.state.value.name}
             handleChange={this.handleChange.bind(this)} />
@@ -83,11 +85,10 @@ class ActionTrigger extends React.Component {
     }
     if(this.state.num_params > 0) {
       const textInputs = this.state.input_values.map((value, index) =>
-          <span>
-          <label for={index}>{this.state.params[index]}</label>
+          <span key={'span' + index}>
+          <label htmlFor={index}>{this.state.params[index]}</label>
           <input
             type="text"
-            key={index}
             value={value}
             name={index}
             id={index}
