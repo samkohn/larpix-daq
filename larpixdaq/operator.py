@@ -28,6 +28,27 @@ class Operator(object):
 
     ### Configurations
 
+    def configure_chip(self, chip, name, value, channel=''):
+        '''
+        Set the configuration in software for the specified ASIC.
+
+        '''
+        self._controller.send_action('LArPix board', 'configure_chip',
+                [chip, name, value, channel])
+        for _ in range(2):
+            yield self._controller.receive(None)
+
+    def write_configuration(self, chip):
+        '''
+        Send the configuration values from software onto the ASIC.
+
+        '''
+        self._controller.send_action('LArPix board', 'write_config',
+                [chip])
+        for _ in range(2):
+            yield self._controller.receive(None)
+
+
     def load_configuration(self, name):
         '''
         Load the given configuration onto the LArPix ASICs.
