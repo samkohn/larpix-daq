@@ -5,41 +5,99 @@ class ActionTrigger extends React.Component {
   constructor(props) {
     super(props);
     if(this.props.type == 'select') {
-      this.state = {value: this.props.type_options[0]};
+      const start_value = this.props.type_options[0];
+      this.state = {
+        value: start_value,
+        input_values: Array(start_value.num_params).fill(''),
+        params: [],
+        num_params: 0,
+      };
+    }
+    else if(this.props.type == 'button') {
+      this.state = {
+        input_values: Array(this.props.num_params).fill(''),
+        params: this.props.params,
+        num_params: this.props.num_params,
+      };
     }
   }
 
-  handleChange(new_value) {
-    this.setState({value: new_value});
+  handleChange(new_value_name) {
+    for(let i in this.props.type_options) {
+      if(this.props.type_options[i].name == new_value_name) {
+        this.setState(function(state, props){
+          const new_value = this.props.type_options[i];
+          const params = this.props.type_options[i].params;
+          const num_params = this.props.type_options[i].num_params;
+          return {
+            value: new_value,
+            input_values: Array(new_value.num_params).fill(''),
+            params: params,
+            num_params, num_params,
+          };
+        });
+      }
+    }
+  }
+
+  handleInputChange(event) {
+    const new_value = event.target.value;
+    const index = Number(event.target.name);
+    this.setState(function(state, props) {
+        state.input_values[index] = new_value;
+        return {input_values: state.input_values};
+    });
   }
 
   onTriggerClick() {
     const socket_msg = [this.props.socket_msg];
     if(this.props.type == 'select') {
       socket_msg.push(this.state.value);
+      socket_msg.push(this.state.input_values);
       console.log(socket_msg);
+    }
+    else if(this.props.type == 'button') {
+      socket_msg.push(this.state.input_values);
     }
     socket.emit(this.props.socket_event, socket_msg);
     this.props.onButtonClick(this.props.name);
   }
 
   render() {
+    let list = [];
     const button = (
         <ActionTriggerButton
           name={this.props.name}
           disabled={this.props.disabled}
           onClick={this.onTriggerClick.bind(this)} />
     );
+    list.push(button);
     if(this.props.type == 'select') {
       const select = (
           <ActionTriggerSelect
             options={this.props.type_options}
-            value={this.state.value}
+            value={this.state.value.name}
             handleChange={this.handleChange.bind(this)} />
       );
-      return <div>{button} {select}</div>;
+      list.push(select);
     }
-    return button;
+    if(this.state.num_params > 0) {
+      const textInputs = this.state.input_values.map((value, index) =>
+          <span>
+          <label for={index}>{this.state.params[index]}</label>
+          <input
+            type="text"
+            key={index}
+            value={value}
+            name={index}
+            id={index}
+            onChange={this.handleInputChange.bind(this)}>
+          </input>
+          </span>
+      );
+      list.push(textInputs);
+    }
+    return <div>{list}</div>;
   }
 }
 class ActionTriggerButton extends React.Component {
@@ -69,7 +127,7 @@ class ActionTriggerSelect extends React.Component {
   }
   render() {
     const options = this.props.options.map((o) =>
-        <option key={o} value={o}>{o}</option>
+        <option key={o.name} value={o.name}>{o.name}</option>
     );
     const select = (
         <select value={this.props.value} onChange={this.onSelectChange.bind(this)}>
@@ -173,7 +231,9 @@ class ActionDashboard extends React.Component {
             disabled={a.enabled_states.indexOf(obj.props.daqState) < 0}
             onButtonClick={obj.onTriggerClick.bind(obj)}
             type={a.type}
-            type_options={a.type_options} />
+            type_options={a.type_options}
+            params={a.params}
+            num_params={a.num_params} />
       );
     });
     const actionTriggersList = actionTriggers.map((a) => (
@@ -236,30 +296,35 @@ const actions = [
     socket_event: 'command/prepare-run',
     enabled_states: ['INIT', 'START'],
     type: 'button',
+    num_params: 0,
   },
   {
     action_name: 'start_run',
     socket_event: 'command/start-run',
     enabled_states: ['READY'],
     type: 'button',
+    num_params: 0,
   },
   {
     action_name: 'end_run',
     socket_event: 'command/end-run',
     enabled_states: ['RUN'],
     type: 'button',
+    num_params: 0,
   },
   {
     action_name: 'data_rate',
     socket_event: 'command/data-rate',
     enabled_states: ['READY', 'RUN'],
     type: 'button',
+    num_params: 0,
   },
   {
     action_name: 'packets',
     socket_event: 'command/packets',
     enabled_states: ['READY', 'RUN'],
     type: 'button',
+    num_params: 0,
   },
   {
     action_name: 'run_routine',
@@ -267,10 +332,30 @@ const actions = [
     enabled_states: ['INIT',  'READY', 'RUN', 'START'],
     type: 'select',
     type_options: [
-      'quickstart',
-      'leakage_current_scan',
+    {name: 'quickstart',
+      num_params: 0},
+    {name: 'leakage_current_scan',
+      num_params: 1,
+      params: ['chips']},
     ],
   },
+  {
+    action_name: 'configure_chip',
+    socket_event: 'command/configure_chip',
+    enabled_states: ['INIT', 'READY', 'RUN', 'START'],
+    type: 'button',
+    num_params: 3,
+    params: ['chip', 'register', 'value'],
+  },
+  {
+    action_name: 'write_configuration',
+    socket_event: 'command/write_config',
+    enabled_states: ['INIT', 'READY', 'RUN', 'START'],
+    type: 'button',
+    num_params: 1,
+    params: ['chip'],
+  },
+
 ];
 
 ReactDOM.render(

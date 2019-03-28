@@ -72,8 +72,11 @@ def create_app():
     def run_routine(msg):
         daq = get_daq()
         result_id = msg[0]
-        routine_name = msg[1]
-        for result in daq.run_routine(routine_name):
+        routine = msg[1]
+        routine_name = routine['name']
+        num_params = routine['num_params']
+        params = msg[2][:num_params]
+        for result in daq.run_routine(routine_name, *params):
             logging.debug(result)
             result['id'] = result_id
             emit('action-update', result)
