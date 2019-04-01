@@ -251,6 +251,106 @@ class ActionDashboard extends React.Component {
   }
 }
 
+class ConfigSendButton extends React.Component {
+  render() {
+    return <button>Send</button>;
+  }
+}
+
+class ConfigRetrieveButton extends React.Component {
+  render() {
+    return <button>Retrieve</button>;
+  }
+}
+
+class ConigChipSelect extends React.Component {
+  render() {
+    const options = this.props.options.map((name) =>
+        <option key={name} value={name}>{name}</option>
+    );
+    return (
+        <select value={this.props.options[0]}>
+          {options}
+        </select>
+    );
+  }
+}
+
+class ConfigList extends React.Component {
+  render() {
+    const items = this.props.registers.map((register) =>
+        <ConfigRegister
+          key={register.name}
+          name={register.name}
+          type={register.type} />
+    );
+    return <div>{items}</div>;
+  }
+}
+
+class ConfigRegister extends React.Component {
+  render() {
+    const label = (
+        <label htmlFor={this.props.name + this.props.type[0]==='c'?'_0':''}>
+          {this.props.name}
+        </label>
+    );
+    let inputs = null;
+    if(this.props.type === 'normal') {
+      inputs = <input
+        type="text"
+        name={this.props.name}
+        id={this.props.name} />;
+    }
+    else if(this.props.type === 'channel value') {
+      inputs = Array(32).map((v, i) =>
+          <input
+            key={i}
+            type="text"
+            name={this.props.name + '_' + i}
+            id={this.props.name + '_' + i} />
+      );
+    }
+    else if(this.props.type === 'channel binary') {
+      inputs = Array(32).map((v, i) =>
+          <input
+            key={i}
+            type="checkbox"
+            name={this.props.name + '_' + i}
+            id={this.props.name + '_' + i} />
+      );
+    }
+    return <div>{label} {inputs}</div>;
+  }
+}
+
+
+class ConfigurationPane extends React.Component {
+  render() {
+    const chipOptions = [246, 245, 252, 243];
+    const registers = [{
+      name: 'pixel_trim_threshold',
+      type: 'channel value'
+    },
+    {
+      name: 'global_threshold',
+      type: 'normal'
+    },
+    {
+      name: 'channel_mask',
+      type: 'channel binary'
+    }]
+    return (
+      <div>
+        <ConfigSendButton />
+        <ConfigRetrieveButton />
+        <ConfigChipSelect options={chipOptions} />
+        <ConfigList registers={registers} />
+      </div>
+    );
+  }
+}
+
 class DAQPage extends React.Component {
   constructor(props) {
     super(props);
@@ -269,6 +369,7 @@ class DAQPage extends React.Component {
           <ActionDashboard
             actions={this.props.actions}
             daqState={this.state.daqState} />
+          <ConfigurationPane />
         </div>
     );
   }
