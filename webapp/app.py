@@ -27,46 +27,43 @@ def create_app():
             daq = get_daq()
             socketio.start_background_task(bg_task, daq)
 
+    def simple_daq(method_name, msg):
+        daq = get_daq()
+        method = getattr(daq, method_name)
+        result = method()
+        result['id'] = msg['id']
+        logging.debug(result)
+        emit('action-update', result)
+
+    def generator_daq(method_name, msg):
+        daq = get_daq()
+        method = getattr(daq, method_name)
+        for result in method(*msg['params']):
+            logging.debug(result)
+            result['id'] = msg['id']
+            emit('action-update', result)
 
     @socketio.on('command/prepare-run')
     def prepare_run(msg):
-        daq = get_daq()
-        result = daq.prepare_physics_run()
-        logging.debug(result)
-        result['id'] = msg[0]
-        emit('action-update', result)
+        simple_daq('prepare_physics_run', msg)
 
     @socketio.on('command/start-run')
     def start_run(msg):
-        daq = get_daq()
-        result = daq.begin_physics_run()
-        logging.debug(result)
-        result['id'] = msg[0]
-        emit('action-update', result)
+        simple_daq('begin_physics_run', msg)
 
     @socketio.on('command/end-run')
     def end_run(msg):
-        daq = get_daq()
-        result = daq.end_physics_run()
-        logging.debug(result)
-        result['id'] = msg[0]
-        emit('action-update', result)
+        simple_daq('end_physics_run', msg)
 
     @socketio.on('command/data-rate')
     def end_run(msg):
-        daq = get_daq()
-        for result in daq.data_rate(0, 0, 0):
-            logging.debug(result)
-            result['id'] = msg[0]
-            emit('action-update', result)
+        msg['params'] = [0, 0, 0]
+        generator_daq('data_rate', msg)
 
     @socketio.on('command/packets')
     def end_run(msg):
-        daq = get_daq()
-        for result in daq.fetch_packets(0, 0, 0):
-            logging.debug(result)
-            result['id'] = msg[0]
-            emit('action-update', result)
+        msg['params'] = [0, 0, 0]
+        generator_daq('fetch_packets', msg)
 
     @socketio.on('command/run_routine')
     def run_routine(msg):
@@ -83,30 +80,15 @@ def create_app():
 
     @socketio.on('command/configure_chip')
     def configure_chip(msg):
-        daq = get_daq()
-        params = msg[1]
-        for result in daq.configure_chip(*params):
-            logging.debug(result)
-            result['id'] = msg[0]
-            emit('action-update', result)
+        generator_daq('configure_chip', msg)
 
     @socketio.on('command/write_config')
     def configure_chip(msg):
-        daq = get_daq()
-        params = msg[1]
-        for result in daq.write_configuration(*params):
-            logging.debug(result)
-            result['id'] = msg[0]
-            emit('action-update', result)
+        generator_daq('write_configuration', msg)
 
     @socketio.on('command/verify_config')
     def verify_config(msg):
-        daq = get_daq()
-        params = msg[1]
-        for result in daq.validate_configuration(*params):
-            logging.debug(result)
-            result['id'] = msg[0]
-            emit('action-update', result)
+        generator_daq('validate_configuration', msg)
 
     @app.route('/command/actionid/<actionid>')
     def get_action_id(actionid):

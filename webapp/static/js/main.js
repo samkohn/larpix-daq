@@ -50,14 +50,16 @@ class ActionTrigger extends React.Component {
   }
 
   onTriggerClick() {
-    const socket_msg = [this.props.socket_msg];
+    const socket_msg = {
+      id: this.props.socket_msg
+    };
     if(this.props.type == 'select') {
-      socket_msg.push(this.state.value);
-      socket_msg.push(this.state.input_values);
+      socket_msg.params = [this.state.value];
+      socket_msg.params.push(this.state.input_values);
       console.log(socket_msg);
     }
     else if(this.props.type == 'button') {
-      socket_msg.push(this.state.input_values);
+      socket_msg.params = [this.state.input_values];
     }
     socket.emit(this.props.socket_event, socket_msg);
     this.props.onButtonClick(this.props.name);
@@ -205,8 +207,8 @@ class ActionDashboard extends React.Component {
     this.state = {results: []};
     onActionUpdate(
         (u) => this.setState(function(state, props) {
-          const old_result = state.results[u.id];
-          state.results[u.id] = {...old_result, ...u};
+          u.name = state.results[u.id].name;
+          state.results[u.id] = u;
         })
     );
   }
