@@ -180,10 +180,10 @@ class ActionMessage extends React.Component {
       return <li>Awaiting more info for: {name}</li>;
     }
     else if (r.message.metadata) {
-      return <li>{name}: {r.header} {r.message.result} ({JSON.stringify(r.message.metadata)})</li>;
+      return <li>{name}: {r.header} {JSON.stringify(r.message.result)} ({JSON.stringify(r.message.metadata)})</li>;
     }
     else {
-      return <li>{name}: {r.header} {r.message.result}</li>;
+      return <li>{name}: {r.header} {JSON.stringify(r.message.result)}</li>;
     }
   }
 }

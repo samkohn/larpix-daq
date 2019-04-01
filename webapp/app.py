@@ -103,7 +103,7 @@ def create_app():
     def verify_config(msg):
         daq = get_daq()
         params = msg[1]
-        for result in daq.configure_chip(*params):
+        for result in daq.validate_configuration(*params):
             logging.debug(result)
             result['id'] = msg[0]
             emit('action-update', result)
