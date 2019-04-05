@@ -33,7 +33,7 @@ The format for the action list is:
   action_name: short name for the action,
   socket_event: the event name to call for SocketIO,
   enabled_states: list of state names where action is available,
-  type: either 'button' or 'select' (select also has a button, and
+  type: 'button', 'pane', or 'select' (select also has a button, and
           either type can have text inputs)
   type_options (if type === 'select'): list of options for the dropdown,
           with the format

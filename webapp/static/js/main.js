@@ -20,6 +20,13 @@ class ActionTrigger extends React.Component {
         num_params: this.props.num_params,
       };
     }
+    else if(this.props.type == 'pane') {
+      this.state = {
+        num_params: 0,
+        showPane: false,
+        pane: null
+      };
+    }
   }
 
   handleChange(new_value_name) {
@@ -65,6 +72,12 @@ class ActionTrigger extends React.Component {
     this.props.onButtonClick(this.props.name);
   }
 
+  togglePane() {
+    this.setState(function(state, props) {
+      return {showPane: !(state.showPane)};
+    });
+  }
+
   render() {
     let list = [];
     const button = (
@@ -99,6 +112,20 @@ class ActionTrigger extends React.Component {
           </span>
       );
       list.push(textInputs);
+    }
+    if(this.props.type == 'pane') {
+      const togglePaneButton = (
+          <button
+            key="toggle_pane"
+            onClick={this.togglePane.bind(this)}>
+            {(this.state.showPane?'Hide':'Show') + ' pane'}
+          </button>
+      );
+      list.push(togglePaneButton);
+      if(this.state.showPane) {
+        const pane = <ConfigurationPane key="pane" />;
+        list.push(pane);
+      }
     }
     return <div>{list}</div>;
   }
@@ -263,13 +290,17 @@ class ConfigRetrieveButton extends React.Component {
   }
 }
 
-class ConigChipSelect extends React.Component {
+class ConfigChipSelect extends React.Component {
+  onChange(event) {
+    const newChip = event.target.value;
+    this.props.onChange(newChip);
+  }
   render() {
     const options = this.props.options.map((name) =>
         <option key={name} value={name}>{name}</option>
     );
     return (
-        <select value={this.props.value} onChange={this.props.onChange}>
+        <select value={this.props.value} onChange={this.onChange.bind(this)}>
           {options}
         </select>
     );
@@ -278,36 +309,46 @@ class ConigChipSelect extends React.Component {
 
 class ConfigList extends React.Component {
   render() {
-    const items = this.props.registers.map((register) =>
-        <ConfigRegister
-          key={register.name}
-          name={register.name}
-          type={register.type} />
-    );
+    const items = [];
+    for(let i in this.props.registers) {
+      const register = this.props.registers[i];
+      const currentValue = this.props.values[i];
+      const registerComponent = (
+          <ConfigRegister
+            key={register.name}
+            name={register.name}
+            type={register.type}
+            index={i}
+            value={currentValue}
+            onChange={this.props.onChange} />
+      );
+      items.push(registerComponent);
+    }
     return <div>{items}</div>;
   }
 }
 
 class ConfigRegister extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      inputs: (this.props.type[0]==='c' ? Array(32).fill('') : '')
-    };
-  }
-  onChangeSimple(newValue) {
-    this.setState({inputs: newValue});
+  onChangeSimple(event) {
+    const newValue = event.target.value;
+    this.props.onChange(this.props.index, newValue);
   }
   onChangeComplex(index) {
-    const func = function(newValue) {
-      this.setState((state, props) => state.inputs[i] = newValue);
+    const func = function(event) {
+      const target = event.target;
+      const val = target.type === 'checkbox' ? target.checked : target.value;
+      const newValue = {
+        index: index,
+        value: val
+      };
+      this.props.onChange(this.props.index, newValue);
     };
     func.bind(this);
     return func;
   }
   render() {
     const label = (
-        <label htmlFor={this.props.name + this.props.type[0]==='c'?'_0':''}>
+        <label htmlFor={this.props.name + (this.props.type[0]==='c'?'_0':'')}>
           {this.props.name}
         </label>
     );
@@ -317,7 +358,7 @@ class ConfigRegister extends React.Component {
         type="text"
         name={this.props.name}
         id={this.props.name}
-        value={this.state.inputs}
+        value={this.props.value}
         onChange={this.onChangeSimple.bind(this)} />;
     }
     else
@@ -325,19 +366,28 @@ class ConfigRegister extends React.Component {
       let type = '';
       if(this.props.type === 'channel value') {
         type = "text";
+        inputs = Array(32).fill('').map((v, i) =>
+            <input
+              key={i}
+              type={type}
+              name={this.props.name + '_' + i}
+              id={this.props.name + '_' + i}
+              value={this.props.value[i]}
+              onChange={this.onChangeComplex(i).bind(this)} />
+        );
       }
       else if(this.props.type == 'channel binary') {
         type = "checkbox";
+        inputs = Array(32).fill('').map((v, i) =>
+            <input
+              key={i}
+              type={type}
+              name={this.props.name + '_' + i}
+              id={this.props.name + '_' + i}
+              checked={this.props.value[i]}
+              onChange={this.onChangeComplex(i).bind(this)} />
+        );
       }
-      inputs = Array(32).map((v, i) =>
-          <input
-            key={i}
-            type={type}
-            name={this.props.name + '_' + i}
-            id={this.props.name + '_' + i}
-            value={this.state.inputs[i]}
-            onChange={this.onChangeComplex(i).bind(this)} />
-      );
     }
     return <div>{label} {inputs}</div>;
   }
@@ -349,10 +399,11 @@ class ConfigurationPane extends React.Component {
     super(props);
     this.state = {
       chip: null,
+      visibleValues: [Array(32).fill('16'), '16', Array(32).fill(false)],
       changes: [],
     };
-    this.chipOptions = [246, 245, 252, 243];
-    this.state.chip = chipOptions[0];
+    this.chipOptions = ['246', '245', '252', '243'];
+    this.state.chip = this.chipOptions[0];
     this.registers = [{
       name: 'pixel_trim_threshold',
       type: 'channel value'
@@ -365,11 +416,74 @@ class ConfigurationPane extends React.Component {
       name: 'channel_mask',
       type: 'channel binary'
     }];
+    const reference = [Array(32).fill('16'), '16', Array(32).fill(false)];
+    this.referenceValues = {
+      '246': reference,
+      '245': reference,
+      '252': reference,
+      '243': reference,
+    };
   }
 
   onChipChange(newChip) {
+    const chipReference = this.referenceValues[this.state.chip];
+    const changes = [];
+    for(let i in this.registers) {
+      const visibleValue = this.state.visibleValues[i];
+      const referenceValue = chipReference[i];
+      const type = this.registers[i].type;
+      if(type === 'normal') {
+        if(visibleValue !== referenceValue) {
+          changes.push({
+            index: i,
+            chipid: this.state.chip,
+            name: this.registers[i].name,
+            newValue: visibleValue
+          });
+        }
+      }
+      else if(type[0] === 'c') {
+        for(let channel in referenceValue) {
+          if(visibleValue[channel] !== referenceValue[channel]) {
+            changes.push({
+              index: i,
+              chipid: this.state.chip,
+              name: this.registers[i].name,
+              channel: channel,
+              newValue: visibleValue[channel]
+            });
+          }
+        }
+      }
+    }
     this.setState({chip: newChip});
+    this.setState((state, props) => state.changes.push(...changes));
   }
+
+  onRegisterChange(index, newValue) {
+    const type = this.registers[index].type;
+    if(type === 'normal') {
+      this.setState(function(state, props) {
+        const newValues = state.visibleValues;
+        newValues[index] = newValue;
+        console.log(newValues);
+        return {visibleValues: newValues};
+      });
+    }
+    else if(type[0] == 'c') {
+      const channel = newValue.index;
+      const value = newValue.value;
+      this.setState(function(state, props) {
+        const newValues = state.visibleValues;
+        newValues[index][channel] = value;
+        return {visibleValues: newValues};
+      });
+    }
+    else {
+      console.log(type);
+    }
+  }
+
 
   render() {
     return (
@@ -380,7 +494,10 @@ class ConfigurationPane extends React.Component {
           options={this.chipOptions}
           value={this.state.chip}
           onChange={this.onChipChange.bind(this)} />
-        <ConfigList registers={this.registers} />
+        <ConfigList
+          registers={this.registers}
+          values={this.state.visibleValues}
+          onChange={this.onRegisterChange.bind(this)} />
       </div>
     );
   }
@@ -404,7 +521,6 @@ class DAQPage extends React.Component {
           <ActionDashboard
             actions={this.props.actions}
             daqState={this.state.daqState} />
-          <ConfigurationPane />
         </div>
     );
   }
@@ -482,9 +598,7 @@ const actions = [
     action_name: 'configure_chip',
     socket_event: 'command/configure_chip',
     enabled_states: ['INIT', 'READY', 'RUN', 'START'],
-    type: 'button',
-    num_params: 3,
-    params: ['chip', 'register', 'value'],
+    type: 'pane',
   },
   {
     action_name: 'write_configuration',
