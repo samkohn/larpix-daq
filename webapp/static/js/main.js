@@ -142,19 +142,19 @@ class ActionTriggerSelect extends React.Component {
 }
 
 
-class DAQState extends React.Component {
+class DAQState extends React.PureComponent {
   render() {
     return <h1>State: {this.props.state}</h1>;
   }
 }
 
-class DAQClient extends React.Component {
+class DAQClient extends React.PureComponent {
   render() {
     return <li>{this.props.name}</li>;
   }
 }
 
-class DAQClientList extends React.Component {
+class DAQClientList extends React.PureComponent {
   constructor(props) {
     super(props);
     this.state = {clients: []};
