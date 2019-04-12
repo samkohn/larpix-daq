@@ -413,7 +413,7 @@ class ConfigurationPane extends React.Component {
     super(props);
     this.state = {
       chip: null,
-      visibleValues: null,
+      values: null,
     };
     this.chipOptions = ['246', '245', '252', '243'];
     this.state.chip = this.chipOptions[0];
@@ -429,38 +429,17 @@ class ConfigurationPane extends React.Component {
       name: 'channel_mask',
       type: 'channel binary'
     }];
-    const reference = [Array(32).fill('16'), '16', Array(32).fill(false)];
-    this.referenceValues = {
+    const referenceValues = {
       '246': new Configuration(),
       '245': new Configuration(),
       '252': new Configuration(),
       '243': new Configuration(),
     };
-    this.state.visibleValues = this.referenceValues[this.state.chip];
+    this.state.values = referenceValues;
   }
 
   onChipChange(newChip) {
-    const chipReference = this.referenceValues[this.state.chip];
-    for(let i in this.registers) {
-      const type = this.registers[i].type;
-      const name = this.registers[i].name;
-      const visibleValue = this.state.visibleValues[name];
-      const referenceValue = chipReference[name];
-      if(type === 'normal') {
-        if(visibleValue !== referenceValue) {
-          chipReference[name] = visibleValue;
-        }
-      }
-      else if(type[0] === 'c') {
-        for(let channel in referenceValue) {
-          if(visibleValue[channel] !== referenceValue[channel]) {
-            chipReference[name][channel] = visibleValue[channel];
-          }
-        }
-      }
-    }
     this.setState({chip: newChip});
-    this.setState({visibleValues: this.referenceValues[newChip]});
   }
 
   onRegisterChange(index, newValue) {
@@ -468,19 +447,19 @@ class ConfigurationPane extends React.Component {
     const name = this.registers[index].name;
     if(type === 'normal') {
       this.setState(function(state, props) {
-        const newValues = state.visibleValues;
+        const newValues = state.values[state.chip];
         newValues[name] = newValue;
         console.log(newValues);
-        return {visibleValues: newValues};
+        return {values: state.values};
       });
     }
     else if(type[0] == 'c') {
       const channel = newValue.index;
       const value = newValue.value;
       this.setState(function(state, props) {
-        const newValues = state.visibleValues;
+        const newValues = state.values[state.chip];
         newValues[name][channel] = value;
-        return {visibleValues: newValues};
+        return {values: state.values};
       });
     }
     else {
@@ -510,7 +489,7 @@ class ConfigurationPane extends React.Component {
           onChange={this.onChipChange.bind(this)} />
         <ConfigList
           registers={this.registers}
-          values={this.state.visibleValues}
+          values={this.state.values[this.state.chip]}
           onChange={this.onRegisterChange.bind(this)} />
       </div>
     );
