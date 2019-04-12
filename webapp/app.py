@@ -90,6 +90,10 @@ def create_app():
     def verify_config(msg):
         generator_daq('validate_configuration', msg)
 
+    @socketio.on('command/retrieve_config')
+    def retrieve_config(msg):
+        generator_daq('retrieve_configuration', msg)
+
     @app.route('/command/actionid/<actionid>')
     def get_action_id(actionid):
         o = get_daq()

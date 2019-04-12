@@ -123,7 +123,10 @@ class ActionTrigger extends React.Component {
       );
       list.push(togglePaneButton);
       if(this.state.showPane) {
-        const pane = <ConfigurationPane key="pane" />;
+        const pane = <ConfigurationPane
+          key="pane"
+          next_id={this.props.socket_msg}
+          onButtonClick={this.props.onButtonClick} />;
         list.push(pane);
       }
     }
@@ -285,8 +288,11 @@ class ConfigSendButton extends React.Component {
 }
 
 class ConfigRetrieveButton extends React.Component {
+  onButtonClick(event) {
+    this.props.onButtonClick();
+  }
   render() {
-    return <button>Retrieve</button>;
+    return <button onClick={this.onButtonClick.bind(this)}>Retrieve</button>;
   }
 }
 
@@ -482,12 +488,22 @@ class ConfigurationPane extends React.Component {
     }
   }
 
+  onRetrieveButtonClick() {
+    const socket_event = 'command/retrieve_config';
+    const socket_msg = {
+      id: this.props.next_id,
+      params: [this.state.chip]
+    };
+    socket.emit(socket_event, socket_msg);
+    this.props.onButtonClick('retrieve_config');
+  }
 
   render() {
     return (
       <div>
         <ConfigSendButton />
-        <ConfigRetrieveButton />
+        <ConfigRetrieveButton
+          onButtonClick={this.onRetrieveButtonClick.bind(this)} />
         <ConfigChipSelect
           options={this.chipOptions}
           value={this.state.chip}

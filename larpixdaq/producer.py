@@ -52,6 +52,9 @@ try:
                     overwrite the configuration stored in software.''',
                 'fetch_configs': '''fetch_configs()
                     Return a list of available configurations.''',
+                'retrieve_config': '''retrieve_config(chipid)
+                    Return a dict representation of the given chip's
+                    configuration that is stored in software.''',
                 'quickstart': '''quickstart(board_name='pcb-1')
                     Start up the board into a quiescent state.''',
                 'list_routines': '''list_routines()
@@ -232,6 +235,20 @@ try:
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
+    def retrieve_config(chipid_str):
+        '''
+        Return the current configuration stored in software for the
+        given chip.
+
+        '''
+        try:
+            global board
+            chipid = int(chipid_str)
+            chip = board.get_chip(chipid, 0)
+            return chip.config.to_dict()
+        except Exception as e:
+            logging.exception(e)
+            return 'ERROR: %s' % e
     def quickstart(board_name='pcb-1'):
         '''
         Start up the board and configure chips to a quiescent state.
@@ -293,6 +310,7 @@ try:
     producer.actions['quickstart'] = quickstart
     producer.actions['configure_name'] = configure_name
     producer.actions['fetch_configs'] = fetch_configs
+    producer.actions['retrieve_config'] = retrieve_config
     producer.actions['list_routines'] = list_routines
     producer.actions['run_routine'] = run_routine
     producer.actions['sleep'] = sleep

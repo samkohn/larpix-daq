@@ -97,6 +97,17 @@ class Operator(object):
                 'fetch_configs', [])
         return action_id
 
+    def retrieve_configuration(self, chip):
+        '''
+        Return a dict of the current configuration stored in software
+        for the given chipid.
+
+        '''
+        self._controller.send_action('LArPix board', 'retrieve_config',
+                [chip])
+        for _ in range(2):
+            yield self._controller.receive(None)
+
 
     ### Calibrations
 
