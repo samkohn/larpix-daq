@@ -189,7 +189,24 @@ class DAQClientList extends React.PureComponent {
     super(props);
     this.state = {clients: []};
     onClientUpdate(
-        (u) => this.setState({clients: u.message.result})
+        (u) => {
+          const result = u.message.result;
+          const existing = this.state.clients;
+          let same = true;
+          if(result.length !== existing.length) {
+            same = false;
+          }
+          else {
+            for(let i in existing) {
+              if(result[i] !== existing[i]) {
+                same = false;
+              }
+            }
+          }
+          if(!same) {
+            this.setState({clients: result})
+          }
+        }
     );
   }
   render() {
