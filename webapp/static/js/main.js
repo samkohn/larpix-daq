@@ -417,12 +417,12 @@ class ConfigRegister extends React.Component {
   }
 }
 
-class Configuration {
-  constructor() {
-    this.pixel_trim_threshold = Array(32).fill('16');
-    this.global_threshold = '16';
-    this.channel_mask = Array(32).fill(false);
-  }
+function configurationFactory() {
+  return {
+    pixel_trim_thresholds: Array(32).fill(16),
+    global_threshold: '16',
+    channel_mask: Array(32).fill(false),
+  };
 };
 
 class ConfigurationPane extends React.Component {
@@ -447,10 +447,10 @@ class ConfigurationPane extends React.Component {
       type: 'channel binary'
     }];
     const referenceValues = {
-      '246': new Configuration(),
-      '245': new Configuration(),
-      '252': new Configuration(),
-      '243': new Configuration(),
+      '246': configurationFactory(),
+      '245': configurationFactory(),
+      '252': configurationFactory(),
+      '243': configurationFactory(),
     };
     this.state.values = referenceValues;
   }
