@@ -52,7 +52,8 @@ class ActionTrigger extends React.Component {
     const new_value = event.target.value;
     const index = Number(event.target.name);
     this.setState(function(state, props) {
-        state.input_values[index] = new_value;
+        let new_inputs = state.input_values.slice();
+        new_inputs[index] = new_value;
         return {input_values: state.input_values};
     });
   }
@@ -267,7 +268,7 @@ class ActionDashboard extends React.Component {
 
   onRegisterChange(name, newValue) {
     this.setState(function(state, props) {
-      const pane = state.configuration_pane;
+      const pane = {...state.configuration_pane};
       const chip = pane.chip;
       pane.values[chip][name] = newValue;
       return {configuration_pane: pane};
@@ -276,7 +277,7 @@ class ActionDashboard extends React.Component {
 
   onChipChange(newChip) {
     this.setState(function(state, props) {
-      const pane = state.configuration_pane;
+      const pane = {...state.configuration_pane};
       pane.chip = newChip;
       return {configuration_pane: pane};
     });
@@ -291,7 +292,11 @@ class ActionDashboard extends React.Component {
         result: '',
       },
     };
-    this.setState((state, props) => state.results.push(first_description));
+    this.setState((state, props) => {
+      let new_results = state.results.slice();
+      new_results.push(first_description);
+      return {results: new_results};
+    });
   }
   render() {
     const obj = this;
