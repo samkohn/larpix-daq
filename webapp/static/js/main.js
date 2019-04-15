@@ -1,4 +1,5 @@
 'use strict';
+//bug: configuration register arrays are not being cloned deeply enough - typing in the boxes changes the action result message text
 
 var socket = io();
 class ActionTrigger extends React.Component {
@@ -112,23 +113,6 @@ class ActionTrigger extends React.Component {
           </span>
       );
       list.push(textInputs);
-    }
-    if(this.props.type == 'pane') {
-      const togglePaneButton = (
-          <button
-            key="toggle_pane"
-            onClick={this.togglePane.bind(this)}>
-            {(this.state.showPane?'Hide':'Show') + ' pane'}
-          </button>
-      );
-      list.push(togglePaneButton);
-      if(this.state.showPane) {
-        const pane = <ConfigurationPane
-          key="pane"
-          next_id={this.props.socket_msg}
-          onButtonClick={this.props.onButtonClick} />;
-        list.push(pane);
-      }
     }
     return <div>{list}</div>;
   }
@@ -251,14 +235,53 @@ class ActionResultsList extends React.Component {
 class ActionDashboard extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {results: []};
-    onActionUpdate(
-        (u) => this.setState(function(state, props) {
-          u.name = state.results[u.id].name;
-          state.results[u.id] = u;
-        })
-    );
+    this.state = {
+      results: [],
+      configuration_pane: {
+        chip: null,
+        values: null,
+      },
+    };
+    onActionUpdate((u) => {
+      this.setState(function(state, props) {
+        let newResults = state.results.slice();
+        u.name = newResults[u.id].name;
+        newResults[u.id] = u;
+        return {results: newResults};
+      });
+      if(u.name === 'retrieve_config') {
+        const new_configs = u.message.result;
+        const chipid = u.message.metadata.params[0];
+        this.setState(function(state, props) {
+          const copy = {...state.configuration_pane};
+          copy.values[chipid] = {...copy.values[chipid], ...new_configs};
+          return {configuration_pane: copy};
+        });
+      }
+    });
   }
+
+  initConfigPane(chip, values) {
+    this.setState({configuration_pane: {chip: chip, values:values}});
+  }
+
+  onRegisterChange(name, newValue) {
+    this.setState(function(state, props) {
+      const pane = state.configuration_pane;
+      const chip = pane.chip;
+      pane.values[chip][name] = newValue;
+      return {configuration_pane: pane};
+    });
+  }
+
+  onChipChange(newChip) {
+    this.setState(function(state, props) {
+      const pane = state.configuration_pane;
+      pane.chip = newChip;
+      return {configuration_pane: pane};
+    });
+  }
+
   onTriggerClick(name) {
     const first_description = {
       header: '_PRELIM',
@@ -286,12 +309,23 @@ class ActionDashboard extends React.Component {
             num_params={a.num_params} />
       );
     });
+    const pane = <ConfigurationPane
+      key="pane"
+      next_id={this.state.results.length}
+      chip={this.state.configuration_pane.chip}
+      values={this.state.configuration_pane.values}
+      onInit={this.initConfigPane.bind(this)}
+      onRegisterChange={this.onRegisterChange.bind(this)}
+      onChipChange={this.onChipChange.bind(this)}
+      onButtonClick={this.onTriggerClick.bind(this)} />;
     const actionTriggersList = actionTriggers.map((a) => (
           <li key={a.props.name}>{a}</li>
     ));
     return (
         <div>
           <ul>{actionTriggersList}</ul>
+          <br />
+          {pane}
           <br />
           <ActionResultsList results={this.state.results} />
         </div>);
@@ -428,14 +462,9 @@ function configurationFactory() {
 class ConfigurationPane extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {
-      chip: null,
-      values: null,
-    };
     this.chipOptions = ['246', '245', '252', '243'];
-    this.state.chip = this.chipOptions[0];
     this.registers = [{
-      name: 'pixel_trim_threshold',
+      name: 'pixel_trim_thresholds',
       type: 'channel value'
     },
     {
@@ -452,32 +481,25 @@ class ConfigurationPane extends React.Component {
       '252': configurationFactory(),
       '243': configurationFactory(),
     };
-    this.state.values = referenceValues;
+    this.props.onInit(this.chipOptions[0], referenceValues);
   }
 
   onChipChange(newChip) {
-    this.setState({chip: newChip});
+    this.props.onChipChange(newChip);
   }
 
   onRegisterChange(index, newValue) {
     const type = this.registers[index].type;
     const name = this.registers[index].name;
     if(type === 'normal') {
-      this.setState(function(state, props) {
-        const newValues = state.values[state.chip];
-        newValues[name] = newValue;
-        console.log(newValues);
-        return {values: state.values};
-      });
+      this.props.onRegisterChange(name, newValue);
     }
     else if(type[0] == 'c') {
       const channel = newValue.index;
       const value = newValue.value;
-      this.setState(function(state, props) {
-        const newValues = state.values[state.chip];
-        newValues[name][channel] = value;
-        return {values: state.values};
-      });
+      const toUpdate = this.props.values[this.props.chip][name];
+      toUpdate[channel] = value;
+      this.props.onRegisterChange(name, toUpdate);
     }
     else {
       console.log(type);
@@ -488,13 +510,16 @@ class ConfigurationPane extends React.Component {
     const socket_event = 'command/retrieve_config';
     const socket_msg = {
       id: this.props.next_id,
-      params: [this.state.chip]
+      params: [this.props.chip]
     };
     socket.emit(socket_event, socket_msg);
     this.props.onButtonClick('retrieve_config');
   }
 
   render() {
+    if(!(this.props.chip)) {
+      return null;
+    }
     return (
       <div>
         <ConfigSendButton />
@@ -502,11 +527,11 @@ class ConfigurationPane extends React.Component {
           onButtonClick={this.onRetrieveButtonClick.bind(this)} />
         <ConfigChipSelect
           options={this.chipOptions}
-          value={this.state.chip}
+          value={this.props.chip}
           onChange={this.onChipChange.bind(this)} />
         <ConfigList
           registers={this.registers}
-          values={this.state.values[this.state.chip]}
+          values={this.props.values[this.props.chip]}
           onChange={this.onRegisterChange.bind(this)} />
       </div>
     );
@@ -603,12 +628,6 @@ const actions = [
       num_params: 1,
       params: ['chips']},
     ],
-  },
-  {
-    action_name: 'configure_chip',
-    socket_event: 'command/configure_chip',
-    enabled_states: ['INIT', 'READY', 'RUN', 'START'],
-    type: 'pane',
   },
   {
     action_name: 'write_configuration',
