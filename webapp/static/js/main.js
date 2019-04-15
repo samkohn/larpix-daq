@@ -105,6 +105,7 @@ class ActionTrigger extends React.Component {
           <label htmlFor={index}>{this.state.params[index]}</label>
           <input
             type="text"
+            className="actioninput"
             value={value}
             name={index}
             id={index}
@@ -418,6 +419,7 @@ class ConfigRegister extends React.Component {
     if(this.props.type === 'normal') {
       inputs = <input
         type="text"
+        className="configinput"
         name={this.props.name}
         id={this.props.name}
         value={this.props.value}
@@ -430,6 +432,7 @@ class ConfigRegister extends React.Component {
         type = "text";
         inputs = Array(32).fill('').map((v, i) =>
             <input
+              className="configinput"
               key={i}
               type={type}
               name={this.props.name + '_' + i}
