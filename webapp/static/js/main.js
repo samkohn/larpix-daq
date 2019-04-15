@@ -1,5 +1,4 @@
 'use strict';
-//bug: configuration register arrays are not being cloned deeply enough - typing in the boxes changes the action result message text
 
 var socket = io();
 class ActionTrigger extends React.Component {
@@ -251,7 +250,7 @@ class ActionDashboard extends React.Component {
         return {results: newResults};
       });
       if(u.name === 'retrieve_config') {
-        const new_configs = u.message.result;
+        const new_configs = JSON.parse(JSON.stringify(u.message.result));
         const chipid = u.message.metadata.params[0];
         this.setState(function(state, props) {
           const copy = {...state.configuration_pane};
