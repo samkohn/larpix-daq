@@ -68,11 +68,11 @@ def create_app():
     @socketio.on('command/run_routine')
     def run_routine(msg):
         daq = get_daq()
-        result_id = msg[0]
-        routine = msg[1]
+        result_id = msg['id']
+        routine = msg['params'][0]
         routine_name = routine['name']
         num_params = routine['num_params']
-        params = msg[2][:num_params]
+        params = msg['params'][1][:num_params]
         for result in daq.run_routine(routine_name, *params):
             logging.debug(result)
             result['id'] = result_id

@@ -67,7 +67,7 @@ class ActionTrigger extends React.Component {
       console.log(socket_msg);
     }
     else if(this.props.type == 'button') {
-      socket_msg.params = [this.state.input_values];
+      socket_msg.params = this.state.input_values;
     }
     socket.emit(this.props.socket_event, socket_msg);
     this.props.onButtonClick(this.props.name);
