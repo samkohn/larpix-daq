@@ -545,7 +545,7 @@ class ConfigurationPane extends React.Component {
   }
 }
 
-class DAQPage extends React.Component {
+class DAQPage extends React.PureComponent {
   constructor(props) {
     super(props);
     this.state = {daqState: 'INIT'}
