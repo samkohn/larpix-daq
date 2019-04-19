@@ -338,8 +338,11 @@ class ActionDashboard extends React.Component {
 }
 
 class ConfigSendButton extends React.Component {
+  onButtonClick(event) {
+    this.props.onButtonClick();
+  }
   render() {
-    return <button>Send</button>;
+    return <button onClick={this.onButtonClick.bind(this)}>Send</button>;
   }
 }
 
@@ -523,13 +526,24 @@ class ConfigurationPane extends React.Component {
     this.props.onButtonClick('retrieve_config');
   }
 
+  onSendButtonClick() {
+    const socket_event = 'command/send_config';
+    const socket_msg = {
+      id: this.props.next_id,
+      params: [{[this.props.chip]: this.props.values[this.props.chip]}],
+    };
+    socket.emit(socket_event, socket_msg);
+    this.props.onButtonClick('send_config');
+  }
+
   render() {
     if(!(this.props.chip)) {
       return null;
     }
     return (
       <div>
-        <ConfigSendButton />
+        <ConfigSendButton
+          onButtonClick={this.onSendButtonClick.bind(this)} />
         <ConfigRetrieveButton
           onButtonClick={this.onRetrieveButtonClick.bind(this)} />
         <ConfigChipSelect

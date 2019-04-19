@@ -108,6 +108,19 @@ class Operator(object):
         for _ in range(2):
             yield self._controller.receive(None)
 
+    def send_configuration(self, updates):
+        '''
+        Send the given configuration updates to the LArPix control
+        software.
+
+        Updates should be a dict with keyed by chip ID.
+
+        '''
+        self._controller.send_action('LArPix board', 'send_config',
+                [updates])
+        for _ in range(2):
+            yield self._controller.receive(None)
+
 
     ### Calibrations
 

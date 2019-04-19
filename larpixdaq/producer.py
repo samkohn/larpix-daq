@@ -55,6 +55,9 @@ try:
                 'retrieve_config': '''retrieve_config(chipid)
                     Return a dict representation of the given chip's
                     configuration that is stored in software.''',
+                'send_config': '''send_config(updates)
+                    Apply the given updates to the software
+                    configuration.''',
                 'quickstart': '''quickstart(board_name='pcb-1')
                     Start up the board into a quiescent state.''',
                 'list_routines': '''list_routines()
@@ -249,6 +252,20 @@ try:
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
+    def send_config(updates):
+        '''
+        Apply the given updates to the software configuration.
+
+        '''
+        try:
+            global board
+            for chipid_str, chip_updates in updates.items():
+                chip = board.get_chip(int(chipid_str), 0)
+                chip.config.from_dict(chip_updates)
+            return 'success'
+        except Exception as e:
+            logging.exception(e)
+            return 'ERROR: %s' % e
     def quickstart(board_name='pcb-1'):
         '''
         Start up the board and configure chips to a quiescent state.
@@ -311,6 +328,7 @@ try:
     producer.actions['configure_name'] = configure_name
     producer.actions['fetch_configs'] = fetch_configs
     producer.actions['retrieve_config'] = retrieve_config
+    producer.actions['send_config'] = send_config
     producer.actions['list_routines'] = list_routines
     producer.actions['run_routine'] = run_routine
     producer.actions['sleep'] = sleep

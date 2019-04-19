@@ -94,6 +94,10 @@ def create_app():
     def retrieve_config(msg):
         generator_daq('retrieve_configuration', msg)
 
+    @socketio.on('command/send_config')
+    def send_config(msg):
+        generator_daq('send_configuration', msg)
+
     @app.route('/command/actionid/<actionid>')
     def get_action_id(actionid):
         o = get_daq()
