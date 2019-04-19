@@ -461,8 +461,8 @@ class ConfigRegister extends React.Component {
 function configurationFactory() {
   return {
     pixel_trim_thresholds: Array(32).fill(16),
-    global_threshold: '16',
-    channel_mask: Array(32).fill(false),
+    global_threshold: 16,
+    channel_mask: Array(32).fill(0),
   };
 };
 
@@ -499,13 +499,13 @@ class ConfigurationPane extends React.Component {
     const type = this.registers[index].type;
     const name = this.registers[index].name;
     if(type === 'normal') {
-      this.props.onRegisterChange(name, newValue);
+      this.props.onRegisterChange(name, Number(newValue));
     }
     else if(type[0] == 'c') {
       const channel = newValue.index;
       const value = newValue.value;
       const toUpdate = this.props.values[this.props.chip][name];
-      toUpdate[channel] = value;
+      toUpdate[channel] = Number(value);
       this.props.onRegisterChange(name, toUpdate);
     }
     else {
