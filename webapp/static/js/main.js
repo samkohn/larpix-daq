@@ -53,7 +53,7 @@ class ActionTrigger extends React.Component {
     this.setState(function(state, props) {
         let new_inputs = state.input_values.slice();
         new_inputs[index] = new_value;
-        return {input_values: state.input_values};
+        return {input_values: new_inputs};
     });
   }
 
