@@ -195,8 +195,11 @@ try:
             chipid = int(chipid_str)
             chip = board.get_chip(chipid, 0)
             if isinstance(board.io, FakeIO):
-                board.io.queue.append((chip.get_configuration_packets(
-                larpix.Packet.CONFIG_WRITE_PACKET), b'some bytes'))
+                packets = chip.get_configuration_packets(
+                        larpix.Packet.CONFIG_WRITE_PACKET)
+                for p in packets:
+                    p.packet_type = larpix.Packet.CONFIG_READ_PACKET
+                board.io.queue.append((packets, b'some bytes'))
             result = board.verify_configuration(chip_id=chipid)
             return result
         except Exception as e:
