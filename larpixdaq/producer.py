@@ -8,6 +8,7 @@ import json
 from moddaq import Producer
 import larpix.quickstart as larpix_quickstart
 from larpix.fakeio import FakeIO
+from larpix.zmq_io import ZMQ_IO
 import larpix.larpix as larpix
 
 from larpixdaq.packetformat import toBytes
@@ -17,6 +18,7 @@ try:
     parser.add_argument('address')
     parser.add_argument('--core', default='tcp://127.0.0.1')
     parser.add_argument('-d', '--debug', action='store_true')
+    parser.add_argument('--fake', action='store_true')
     args = parser.parse_args()
     if args.debug:
         logging.basicConfig(level=logging.DEBUG)
@@ -74,7 +76,10 @@ try:
     }
     producer = Producer(address, name='LArPix board', group='BOARD', **kwargs)
     board = larpix.Controller()
-    board.io = FakeIO()
+    if args.fake:
+        board.io = FakeIO()
+    else:
+        board.io = ZMQ_IO('tcp://10.0.1.6')
     board.use_all_chips = True
     state = ''
     run = False
