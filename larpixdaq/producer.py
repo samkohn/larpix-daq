@@ -181,6 +181,13 @@ try:
                 registers = None
             if not message:
                 message = None
+            if isinstance(board.io, FakeIO):
+                packets = chip.get_configuration_packets(
+                        larpix.Packet.CONFIG_WRITE_PACKET)
+                for p in packets:
+                    p.packet_type = larpix.Packet.CONFIG_READ_PACKET
+                    p.assign_parity()
+                board.io.queue.append((packets, b'some bytes'))
             board.read_configuration(chip, registers, message=message)
             packets = board.reads[-1]
             result = '\n'.join(str(p) for p in packets if p.packet_type

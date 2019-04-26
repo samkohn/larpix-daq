@@ -48,6 +48,16 @@ class Operator(object):
         for _ in range(2):
             yield self._controller.receive(None)
 
+    def read_configuration(self, chip):
+        '''
+        Read the configuration values from the ASIC.
+
+        '''
+        self._controller.send_action('LArPix board', 'read_config',
+                [chip])
+        for _ in range(2):
+            yield self._controller.receive(None)
+
     def load_configuration(self, name):
         '''
         Load the given configuration onto the LArPix ASICs.
