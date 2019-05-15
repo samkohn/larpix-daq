@@ -12,6 +12,7 @@ from larpix.zmq_io import ZMQ_IO
 import larpix.larpix as larpix
 
 from larpixdaq.packetformat import toBytes
+from larpixdaq.routines import producer_routines
 
 try:
     parser = argparse.ArgumentParser()
@@ -30,49 +31,6 @@ try:
             'core_address': core_address,
             'response_address': response_address,
             'heartbeat_time_ms': 300,
-            'action_docs': {
-                'configure_chip': '''configure_chip(chipid, name, value,
-                    channel='')
-                    Update the configuration stored in software.''',
-                'bulk_configure': '''bulk_configure(configuration_json)
-                    Update the configuration stored in software.''',
-                'configure_name': '''configure_name(name, chipid,
-                    iochain)
-                    Load the named configuration into software.''',
-                'write_config': '''write_config(chipid, registers='',
-                    write_read='', message='')
-                    Send the configuration from software to the board.''',
-                'read_config': '''read_config(chipid, registers='',
-                    message='')
-                    Read the configuration from the board.''',
-                'validate_config': '''validate_config(chipid)
-                    Read the given chip's configuration and compare it
-                    to the configuration stored in software. Returns
-                    True or False.''',
-                'learn_config': '''learn_config(chipid)
-                    Read the given chip's configuration and use it to
-                    overwrite the configuration stored in software.''',
-                'fetch_configs': '''fetch_configs()
-                    Return a list of available configurations.''',
-                'retrieve_config': '''retrieve_config(chipid)
-                    Return a dict representation of the given chip's
-                    configuration that is stored in software.''',
-                'send_config': '''send_config(updates)
-                    Apply the given updates to the software
-                    configuration.''',
-                'quickstart': '''quickstart(board_name='pcb-1')
-                    Start up the board into a quiescent state.''',
-                'list_routines': '''list_routines()
-                    Return a list of available routines and their call
-                    signatures.''',
-                'run_routine': '''run_routine(name, *args)
-                    Run the specified routine with the specified
-                    arguments. Call ``list_routines`` to learn the
-                    argument lists for each available routine.''',
-                'sleep': '''sleep(time_in_sec)
-                    Wait a certain amount of time and then reply with
-                    'success'.''',
-            },
     }
     producer = Producer(address, name='LArPix board', group='BOARD', **kwargs)
     board = larpix.Controller()
@@ -87,13 +45,11 @@ try:
             'startup': 'startup.json',
             'quiet': 'quiet.json',
     }
-    routines = {
-            'quickstart': 'quickstart()',
-            'leakage_current_scan': 'leakage_current_scan(chips)',
-    }
     def configure_chip(chipid_str, name_str, value_str, channel_str=''):
         '''
-        Update the chip configuration stored in software.
+        configure_chip(chipid, name, value, channel='')
+
+        Update the configuration stored in software.
 
         '''
         try:
@@ -115,6 +71,8 @@ try:
             return 'ERROR: %s' % e
     def bulk_config(configuration_json):
         '''
+        bulk_configure(configuration_json)
+
         Update the configuration stored in software.
 
         '''
@@ -130,6 +88,8 @@ try:
             return 'ERROR: %s' % e
     def configure_name(name, chipid, iochain):
         '''
+        configure_name(name, chipid, iochain)
+
         Load the named configuration into software.
 
         '''
@@ -144,6 +104,8 @@ try:
     def write_config(chipid_str, registers_str='', write_read_str='',
             message=''):
         '''
+        write_config(chipid, registers='', write_read='', message='')
+
         Send the given configuration to the board.
 
         '''
@@ -168,6 +130,8 @@ try:
 
     def read_config(chipid_str, registers_str='', message=''):
         '''
+        read_config(chipid, registers='', message='')
+
         Read configurations from the board.
 
         '''
@@ -198,6 +162,8 @@ try:
             return 'ERROR: %s' % e
     def validate_config(chipid_str):
         '''
+        validate_config(chipid)
+
         Read configurations from the board and compare to those stored
         in software, returning True if they're equal.
 
@@ -219,6 +185,8 @@ try:
             return 'ERROR: %s' % e
     def learn_config(chipid_str):
         '''
+        learn_config(chipid)
+
         Read configurations from the board and use the values to
         overwrite the configuration in software.
 
@@ -244,6 +212,8 @@ try:
             return 'ERROR: %s' % e
     def fetch_configs():
         '''
+        fetch_configs()
+
         Return the ``configurations`` dict's keys.
 
         '''
@@ -255,6 +225,8 @@ try:
             return 'ERROR: %s' % e
     def retrieve_config(chipid_str):
         '''
+        retrieve_config(chipid)
+
         Return the current configuration stored in software for the
         given chip.
 
@@ -269,6 +241,8 @@ try:
             return 'ERROR: %s' % e
     def send_config(updates):
         '''
+        send_config(updates)
+
         Apply the given updates to the software configuration.
 
         '''
@@ -281,22 +255,10 @@ try:
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
-    def quickstart(board_name='pcb-1'):
-        '''
-        Start up the board and configure chips to a quiescent state.
-
-        '''
-        try:
-            global board
-            board = larpix_quickstart.quickcontroller(board_name,
-                    io=board.io)
-            result = 'success'
-            return result
-        except Exception as e:
-            logging.exception(e)
-            return 'ERROR: %s' % e
     def list_routines():
         '''
+        list_routines()
+
         List the available routines.
 
         '''
@@ -307,17 +269,22 @@ try:
             return 'ERROR: %s' % e
     def run_routine(name, *args):
         '''
+        run_routine()
+
         Run the given routine.
 
         '''
         try:
-            result = routine_calls[name](*args)
+            global board
+            board, result = routine_calls[name](board, *args)
             return result
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
     def sleep(time_in_sec):
         '''
+        sleep()
+
         Sleep and return success.
 
         '''
@@ -329,24 +296,46 @@ try:
             logging.exception(e)
             return 'ERROR: %s' % e
 
+    ############
+    # Routines #
+    ############
+    def quickstart(board, board_name='pcb-1'):
+        '''
+        quickstart(board_name='pcb-1')
+
+        Start up the board and configure chips to a quiescent state.
+
+        '''
+        board = larpix_quickstart.quickcontroller(board_name,
+                io=board.io)
+        result = 'success'
+        return board, result
     routine_calls = {
             'quickstart': quickstart,
-            'leakage_current_scan': lambda chips: ('Ran scan on %s' %
-                chips),
+            'leakage_current_scan': lambda board, chips: (board, ('Ran scan on %s' %
+                chips)),
     }
-    producer.actions['configure_chip'] = configure_chip
-    producer.actions['write_config'] = write_config
-    producer.actions['read_config'] = read_config
-    producer.actions['validate_config'] = validate_config
-    producer.actions['learn_config'] = learn_config
-    producer.actions['quickstart'] = quickstart
-    producer.actions['configure_name'] = configure_name
-    producer.actions['fetch_configs'] = fetch_configs
-    producer.actions['retrieve_config'] = retrieve_config
-    producer.actions['send_config'] = send_config
-    producer.actions['list_routines'] = list_routines
-    producer.actions['run_routine'] = run_routine
-    producer.actions['sleep'] = sleep
+    routine_calls.update(producer_routines)
+    producer.register_action('configure_chip', configure_chip,
+            configure_chip.__doc__)
+    producer.register_action('write_config', write_config,
+            write_config.__doc__)
+    producer.register_action('read_config', read_config, read_config.__doc__)
+    producer.register_action('validate_config', validate_config,
+            validate_config.__doc__)
+    producer.register_action('learn_config', learn_config,
+            learn_config.__doc__)
+    producer.register_action('configure_name', configure_name,
+            configure_name.__doc__)
+    producer.register_action('fetch_configs', fetch_configs,
+            fetch_configs.__doc__)
+    producer.register_action('retrieve_config', retrieve_config,
+            retrieve_config.__doc__)
+    producer.register_action('send_config', send_config, send_config.__doc__)
+    producer.register_action('list_routines', list_routines,
+            list_routines.__doc__)
+    producer.register_action('run_routine', run_routine, run_routine.__doc__)
+    producer.register_action('sleep', sleep, sleep.__doc__)
     producer.request_state()
     while True:
         producer.receive(0.4)
