@@ -32,6 +32,7 @@ def create_app():
         method = getattr(daq, method_name)
         result = method()
         result['id'] = msg['id']
+        result['display'] = msg['display']
         logging.debug(result)
         emit('action-update', result)
 
@@ -41,6 +42,7 @@ def create_app():
         for result in method(*msg['params']):
             logging.debug(result)
             result['id'] = msg['id']
+            result['display'] = msg['display']
             emit('action-update', result)
 
     @socketio.on('command/prepare-run')
@@ -76,6 +78,7 @@ def create_app():
         for result in daq.run_routine(routine_name, *params):
             logging.debug(result)
             result['id'] = result_id
+            result['display'] = msg['display']
             emit('action-update', result)
 
     @socketio.on('command/configure_chip')
