@@ -18,7 +18,11 @@ The backend will send responses using the following interface:
 ```
 {
   id: the ID provided when the command was sent,
-  result: the result as specified by the ModDAQ protocol format,
+  header: the ModDAQ message header
+  message: {
+    result: the result of the command,
+    metadata: (optional) metadata
+  },
   display: true to display result in list of messages
 }
 ```
