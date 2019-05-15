@@ -8,7 +8,8 @@ The frontend can send commands using the following interface:
 ```
 {
   id: an integer ID unique to the frontend,
-  params: a list of parameters
+  params: a list of parameters,
+  display: true to display eventual result in list of messages
 }
 ```
 
@@ -17,7 +18,8 @@ The backend will send responses using the following interface:
 ```
 {
   id: the ID provided when the command was sent,
-  result: the result as specified by the ModDAQ protocol format
+  result: the result as specified by the ModDAQ protocol format,
+  display: true to display result in list of messages
 }
 ```
 
