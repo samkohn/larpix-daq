@@ -14,6 +14,15 @@ import larpix.larpix as larpix
 from larpixdaq.packetformat import toBytes
 from larpixdaq.routines import producer_routines
 
+class Routine(object):
+    def __init__(self, name, func, num_params, params=None):
+        if num_params == 0:
+            params = []
+        self.name = name
+        self.func = func
+        self.num_params = num_params
+        self.params = params
+
 try:
     parser = argparse.ArgumentParser()
     parser.add_argument('address')
@@ -263,10 +272,13 @@ try:
 
         '''
         try:
-            return {
-                    name: func.__doc__ for name, func in
-                    routine_calls.items()
-                    }
+            return [{
+                'name': name,
+                'num_params': r.num_params,
+                'params': r.params
+                }
+                for name, r in routines.items()
+                ]
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
@@ -279,7 +291,7 @@ try:
         '''
         try:
             global board
-            board, result = routine_calls[name](board, *args)
+            board, result = routines[name].func(board, *args)
             return result
         except Exception as e:
             logging.exception(e)
@@ -313,12 +325,14 @@ try:
                 io=board.io)
         result = 'success'
         return board, result
-    routine_calls = {
-            'quickstart': quickstart,
-            'leakage_current_scan': lambda board, chips: (board, ('Ran scan on %s' %
-                chips)),
+
+    routines = {
+            'quickstart': Routine('quickstart', quickstart, 1, ['board']),
+            'leakage_current_scan': Routine('leakage_current_scan',
+                lambda board, chip: (board, 'Ran scan on %s' % chip),
+                3, ['chip', 'timeout', 'repeats']),
     }
-    routine_calls.update(producer_routines)
+    routines.update(producer_routines)
     producer.register_action('configure_chip', configure_chip,
             configure_chip.__doc__)
     producer.register_action('write_config', write_config,
