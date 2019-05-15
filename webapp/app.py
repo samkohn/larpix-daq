@@ -25,7 +25,7 @@ def create_app():
         global bg_thread
         if bg_thread is None:
             daq = get_daq()
-            socketio.start_background_task(bg_task, daq)
+            bg_thread = socketio.start_background_task(bg_task, daq)
 
     def simple_daq(method_name, msg):
         daq = get_daq()
