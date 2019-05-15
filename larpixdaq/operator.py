@@ -139,9 +139,10 @@ class Operator(object):
         Return a list of routines/calibrations.
 
         '''
-        action_id = self._controller.send_action('LArPix board',
+        self._controller.send_action('LArPix board',
                 'list_routines', [])
-        return action_id
+        for _ in range(2):
+            yield self._controller.receive(None)
 
     def run_routine(self, name, *args):
         '''

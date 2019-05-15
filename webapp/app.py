@@ -105,6 +105,14 @@ def create_app():
     def read_config(msg):
         generator_daq('read_configuration', msg)
 
+    @app.route('/routines')
+    def get_routines():
+        o = get_daq()
+        for result in o.list_routines():
+            pass
+        print(result)
+        return json.dumps(result)
+
     @app.route('/command/actionid/<actionid>')
     def get_action_id(actionid):
         o = get_daq()

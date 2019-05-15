@@ -263,7 +263,10 @@ try:
 
         '''
         try:
-            return routines
+            return {
+                    name: func.__doc__ for name, func in
+                    routine_calls.items()
+                    }
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
