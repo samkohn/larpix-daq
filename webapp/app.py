@@ -10,7 +10,7 @@ from flask import Flask, render_template, current_app
 from webapp.daq import get_daq
 from flask_socketio import SocketIO, emit
 
-socketio = SocketIO()
+socketio = SocketIO(async_mode='eventlet')
 bg_thread = None
 
 def create_app():
