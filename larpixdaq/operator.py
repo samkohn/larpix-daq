@@ -4,6 +4,14 @@ The operator interface for the LArPix DAQ system.
 '''
 import moddaq
 
+end_receive_loop_headers = {
+        'ACTIONS',
+        'ACTION RESULT',
+        'STATE',
+        'STATE REQUEST',
+        'CLIENTS',
+        }
+
 class Operator(object):
     '''
     The Operator class handles all of the needs of an DAQ operator:
@@ -27,6 +35,12 @@ class Operator(object):
         self.configurations = {}
         self._controller = moddaq.Controller(address)
 
+    def _receive_loop(self):
+        header = None
+        while header not in end_receive_loop_headers:
+            result = self._controller.receive(None)
+            header = result['header']
+            yield result
 
     ### Configurations
 
@@ -37,8 +51,8 @@ class Operator(object):
         '''
         self._controller.send_action('LArPix board', 'configure_chip',
                 [chip, name, value, channel])
-        for _ in range(2):
-            yield self._controller.receive(None)
+        for result in self._receive_loop():
+            yield result
 
     def write_configuration(self, chip):
         '''
@@ -47,8 +61,8 @@ class Operator(object):
         '''
         self._controller.send_action('LArPix board', 'write_config',
                 [chip])
-        for _ in range(2):
-            yield self._controller.receive(None)
+        for result in self._receive_loop():
+            yield result
 
     def read_configuration(self, chip):
         '''
@@ -57,8 +71,8 @@ class Operator(object):
         '''
         self._controller.send_action('LArPix board', 'read_config',
                 [chip])
-        for _ in range(2):
-            yield self._controller.receive(None)
+        for result in self._receive_loop():
+            yield result
 
     def load_configuration(self, name):
         '''
@@ -84,8 +98,8 @@ class Operator(object):
         '''
         self._controller.send_action('LArPix board', 'validate_config',
                 [chip])
-        for _ in range(2):
-            yield self._controller.receive(None)
+        for result in self._receive_loop():
+            yield result
 
     def learn_configuration(self):
         '''
@@ -117,8 +131,8 @@ class Operator(object):
         '''
         self._controller.send_action('LArPix board', 'retrieve_config',
                 [chip])
-        for _ in range(2):
-            yield self._controller.receive(None)
+        for result in self._receive_loop():
+            yield result
 
     def send_configuration(self, updates):
         '''
@@ -130,8 +144,8 @@ class Operator(object):
         '''
         self._controller.send_action('LArPix board', 'send_config',
                 [updates])
-        for _ in range(2):
-            yield self._controller.receive(None)
+        for result in self._receive_loop():
+            yield result
 
 
     ### Calibrations
@@ -143,8 +157,8 @@ class Operator(object):
         '''
         self._controller.send_action('LArPix board',
                 'list_routines', [])
-        for _ in range(2):
-            yield self._controller.receive(None)
+        for result in self._receive_loop():
+            yield result
 
     def run_routine(self, name, *args):
         '''
@@ -153,8 +167,8 @@ class Operator(object):
         '''
         self._controller.send_action('LArPix board',
                 'run_routine', [name] + list(args))
-        for _ in range(2):
-            yield self._controller.receive(None)
+        for result in self._receive_loop():
+            yield result
 
 
     ### Physics runs
@@ -203,8 +217,8 @@ class Operator(object):
 
         '''
         self._controller.send_action('Run data', 'data_rate', [])
-        for _ in range(2):
-            yield self._controller.receive(None)
+        for result in self._receive_loop():
+            yield result
 
     def fetch_packets(self, start_time, end_time, chip_or_channel):
         '''
@@ -214,8 +228,8 @@ class Operator(object):
 
         '''
         self._controller.send_action('Run data', 'packets', [])
-        for _ in range(2):
-            yield self._controller.receive(None)
+        for result in self._receive_loop():
+            yield result
 
     def enable_channel(self, channel):
         '''
