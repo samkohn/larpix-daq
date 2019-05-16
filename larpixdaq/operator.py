@@ -16,14 +16,16 @@ class Operator(object):
 
     '''
 
-    def __init__(self):
+    def __init__(self, address=None):
+        if address is None:
+            address = 'tcp://127.0.0.1:5551'
         self.chips = None
         self.geometry = None
         self.run_number = 0
         self.is_running = False
         self.routines = []
         self.configurations = {}
-        self._controller = moddaq.Controller('tcp://127.0.0.1:5551')
+        self._controller = moddaq.Controller(address)
 
 
     ### Configurations

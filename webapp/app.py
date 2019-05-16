@@ -12,6 +12,7 @@ from flask_socketio import SocketIO, emit
 
 socketio = SocketIO(async_mode='eventlet')
 bg_thread = None
+address = None
 
 def create_app():
     app = Flask(__name__)
@@ -24,11 +25,11 @@ def create_app():
     def start_bg_thread():
         global bg_thread
         if bg_thread is None:
-            daq = get_daq()
+            daq = get_daq(address)
             bg_thread = socketio.start_background_task(bg_task, daq)
 
     def simple_daq(method_name, msg):
-        daq = get_daq()
+        daq = get_daq(address)
         method = getattr(daq, method_name)
         result = method()
         result['id'] = msg['id']
@@ -37,7 +38,7 @@ def create_app():
         emit('action-update', result)
 
     def generator_daq(method_name, msg):
-        daq = get_daq()
+        daq = get_daq(address)
         method = getattr(daq, method_name)
         for result in method(*msg['params']):
             logging.debug(result)
@@ -69,7 +70,7 @@ def create_app():
 
     @socketio.on('command/run_routine')
     def run_routine(msg):
-        daq = get_daq()
+        daq = get_daq(address)
         result_id = msg['id']
         routine = msg['params'][0]
         routine_name = routine['name']
@@ -107,7 +108,7 @@ def create_app():
 
     @app.route('/routines')
     def get_routines():
-        o = get_daq()
+        o = get_daq(address)
         for result in o.list_routines():
             pass
         print(result)
@@ -115,7 +116,7 @@ def create_app():
 
     @app.route('/command/actionid/<actionid>')
     def get_action_id(actionid):
-        o = get_daq()
+        o = get_daq(address)
         try:
             result = o.retrieve_result(int(actionid))
         except:
