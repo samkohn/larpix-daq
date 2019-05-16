@@ -12,16 +12,8 @@ from larpix.zmq_io import ZMQ_IO
 import larpix.larpix as larpix
 
 from larpixdaq.packetformat import toBytes
-from larpixdaq.routines import producer_routines
+from larpixdaq.routines import Routine, producer_routines
 
-class Routine(object):
-    def __init__(self, name, func, num_params, params=None):
-        if num_params == 0:
-            params = []
-        self.name = name
-        self.func = func
-        self.num_params = num_params
-        self.params = params
 
 try:
     parser = argparse.ArgumentParser()
