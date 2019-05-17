@@ -75,7 +75,7 @@ def create_app():
         routine = msg['params'][0]
         routine_name = routine['name']
         num_params = routine['num_params']
-        params = msg['params'][1][:num_params]
+        params = msg['params'][1:]
         for result in daq.run_routine(routine_name, *params):
             logging.debug(result)
             result['id'] = result_id
