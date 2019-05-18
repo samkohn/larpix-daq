@@ -266,8 +266,8 @@ try:
         try:
             return [{
                 'name': name,
-                'num_params': r.num_params,
-                'params': r.params
+                'params': [{'name': p, 'type': 'input'} for p in
+                    r.params],
                 }
                 for name, r in routines.items()
                 ]
@@ -319,10 +319,10 @@ try:
         return board, result
 
     routines = {
-            'quickstart': Routine('quickstart', quickstart, 1, ['board']),
+            'quickstart': Routine('quickstart', quickstart, ['board']),
             'leakage_current_scan': Routine('leakage_current_scan',
                 lambda board, chip: (board, 'Ran scan on %s' % chip),
-                3, ['chip', 'timeout', 'repeats']),
+                ['chip', 'timeout', 'repeats']),
     }
     routines.update(producer_routines)
     producer.register_action('configure_chip', configure_chip,

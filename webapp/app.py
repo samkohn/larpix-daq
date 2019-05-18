@@ -72,9 +72,7 @@ def create_app():
     def run_routine(msg):
         daq = get_daq(address)
         result_id = msg['id']
-        routine = msg['params'][0]
-        routine_name = routine['name']
-        num_params = routine['num_params']
+        routine_name = msg['params'][0]
         params = msg['params'][1:]
         for result in daq.run_routine(routine_name, *params):
             logging.debug(result)
