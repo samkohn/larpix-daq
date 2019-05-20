@@ -26,11 +26,9 @@ try:
         logging.basicConfig(level=logging.DEBUG)
     address = args.address
     core_url = args.core
-    core_address = core_url + ':5550'
-    response_address = core_url + ':5551'
+    core_address = core_url + ':5551'
     kwargs = {
             'core_address': core_address,
-            'response_address': response_address,
             'heartbeat_time_ms': 300,
     }
     producer = Producer(address, name='LArPix board', group='BOARD', **kwargs)

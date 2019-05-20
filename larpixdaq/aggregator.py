@@ -16,8 +16,7 @@ try:
     if args.debug:
         logging.basicConfig(level=logging.DEBUG)
     kwargs = {
-            'core_address': args.core + ':5550',
-            'response_address': args.core + ':5551',
+            'core_address': args.core + ':5551',
             'heartbeat_time_ms': 300,
     }
     aggregator = Aggregator(args.address, name='LArPix aggregator',

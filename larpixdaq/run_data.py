@@ -19,8 +19,7 @@ class RunData(object):
 
     def __init__(self, core):
         consumer_args = {
-                'core_address': core + ':5550',
-                'response_address': core + ':5551',
+                'core_address': core + ':5551',
                 'heartbeat_time_ms': 300,
                 'action_docs': {
                     'data_rate': '''data_rate()
