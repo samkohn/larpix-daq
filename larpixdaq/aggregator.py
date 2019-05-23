@@ -30,10 +30,15 @@ try:
                 _, metadata, data = message
                 print('received %d bytes' % len(data))
                 print('%s' % repr(data[:20]))
-                packets = fromBytes(data)
-                print('received %d packets' % len(packets))
-                metadata['agg_timestamp'] = time.time()
+                if not metadata.get('isInfo', False):
+                    packets = fromBytes(data)
+                    print('received %d packets' % len(packets))
+                    metadata['agg_timestamp'] = time.time()
                 aggregator.broadcast(metadata, data)
+            elif message[0] == 'INFO':
+                aggregator.log('DEBUG', 'Rebroadcasting (%s, %s)' %
+                        (message[1], message[2]))
+                aggregator.rebroadcast_info(message[1], message[2])
         if state != aggregator.state:
             print('State update. New state: %s' % aggregator.state)
             state = aggregator.state

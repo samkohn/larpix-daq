@@ -28,6 +28,8 @@ class RunData(object):
                     'packets': '''packets()
                         Return the packets as a bytestream with a 2-byte
                         delimiter of 0xAAAA.''',
+                    'messages': '''messages()
+                        Return the messages.''',
                 }
 
         }
@@ -35,7 +37,9 @@ class RunData(object):
                 **consumer_args)
         self._consumer.actions['data_rate'] = self._data_rate
         self._consumer.actions['packets'] = self._packets
+        self._consumer.actions['messages'] = self._messages
         self.packets = []
+        self.messages = []
         self.start_time = 0
         return
 
@@ -64,16 +68,33 @@ class RunData(object):
             logging.exception(e)
             return 'ERROR: %s' % e
 
+    def _messages(self):
+        '''
+        Return the messages.
+
+        '''
+        try:
+            return self.messages
+        except Exception as e:
+            logging.exception(e)
+            return 'ERROR: %s' % e
+
     def run(self):
         while True:
             messages = self._consumer.receive(1)
             for message in messages:
                 if message[0] == 'DATA':
-                    if self.start_time == 0:
-                        self.start_time = time.time()
                     _, metadata, data = message
                     packets = pformat.fromBytes(data)
                     self.packets.extend(packets)
+                elif message[0] == 'INFO':
+                    _, header, info_message = message
+                    self.messages.append(info_message)
+                    if (header['component'] == 'LArPix board'
+                            and info_message == 'Beginning run'):
+                        self.start_time = time.time()
+                        self._consumer.log('INFO', 'Received start message')
+
 
 
 if __name__ == '__main__':

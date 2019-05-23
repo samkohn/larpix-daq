@@ -68,6 +68,10 @@ def create_app():
         msg['params'] = [0, 0, 0]
         generator_daq('fetch_packets', msg)
 
+    @socketio.on('command/messages')
+    def end_run(msg):
+        generator_daq('fetch_messages', msg)
+
     @socketio.on('command/run_routine')
     def run_routine(msg):
         daq = get_daq(address)

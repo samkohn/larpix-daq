@@ -231,6 +231,15 @@ class Operator(object):
         for result in self._receive_loop():
             yield result
 
+    def fetch_messages(self):
+        '''
+        Return the messages produced by the DAQ system.
+
+        '''
+        self._controller.send_action('Run data', 'messages', [])
+        for result in self._receive_loop():
+            yield result
+
     def enable_channel(self, channel):
         '''
         Enable the given channel/pixel for data taking, overriding the

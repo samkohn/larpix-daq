@@ -349,6 +349,8 @@ try:
         if state != producer.state:
             print('State update: New state: %s' % producer.state)
             state = producer.state
+            if state == 'RUN':
+                producer.send_info('Beginning run')
         if state == 'RUN':
             if not board.io.is_listening:
                 logging.debug('about to start listening')
