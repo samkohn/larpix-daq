@@ -5,7 +5,7 @@ Webapp for LArPixDAQ.
 import json
 import logging
 
-from flask import Flask, render_template, current_app
+from flask import Flask, render_template, current_app, request
 
 from webapp.daq import get_daq
 from flask_socketio import SocketIO, emit
@@ -20,6 +20,20 @@ def create_app():
     @app.route('/')
     def hello():
         return render_template('index.html')
+
+    @app.route('/state', methods=['GET', 'POST'])
+    def state():
+        if request.method == 'GET':
+            daq = get_daq(address)
+            daq._controller.request_state()
+            result = daq._controller.receive(None)
+            return json.dumps(result)
+        else:
+            newstate = request.form['new']
+            oldstate = request.form['old']
+            result = {'message': {'result': newstate}}
+            socketio.emit('state-update', result)
+            return
 
     @socketio.on('connect')
     def start_bg_thread():
@@ -143,8 +157,5 @@ def bg_task(daq):
         daq._controller.request_clients()
         result = daq._controller.receive(None)
         socketio.emit('client-update', result)
-        daq._controller.request_state()
-        result = daq._controller.receive(None)
-        socketio.emit('state-update', result)
         socketio.sleep(0.5)
 

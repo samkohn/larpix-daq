@@ -9,5 +9,5 @@ setup(
         author_email='skohn@lbl.gov',
         packages=find_packages(),
         install_requires=['moddaq', 'flask >=1.0.0', 'flask-socketio >=3.0.0',
-            'eventlet ~= 0.24.1'],
+            'eventlet ~= 0.24.1', 'requests ~= 2.18'],
 )
