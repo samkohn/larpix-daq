@@ -11,7 +11,6 @@ from webapp.daq import get_daq
 from flask_socketio import SocketIO, emit
 
 socketio = SocketIO(async_mode='eventlet')
-bg_thread = None
 address = None
 
 def create_app():
@@ -29,18 +28,31 @@ def create_app():
             result = daq._controller.receive(None)
             return json.dumps(result)
         else:
-            newstate = request.form['new']
-            oldstate = request.form['old']
+            newstate = request.get_json()['new']
+            oldstate = request.get_json()['old']
             result = {'message': {'result': newstate}}
             socketio.emit('state-update', result)
-            return
+            return ('', 204)
 
-    @socketio.on('connect')
-    def start_bg_thread():
-        global bg_thread
-        if bg_thread is None:
+    @app.route('/component', methods=['GET', 'POST', 'DELETE'])
+    def component():
+        if request.method == 'GET':
             daq = get_daq(address)
-            bg_thread = socketio.start_background_task(bg_task, daq)
+            daq._controller.request_clients()
+            result = daq._controller.receive(None)
+            return json.dumps(result)
+        elif request.method == 'POST':
+            newclient = request.get_json()['new']
+            allclients = request.get_json()['all']
+            result = {'message': {'result': allclients}}
+            socketio.emit('client-update', result)
+            return ('', 204)
+        elif request.method == 'DELETE':
+            lostclient = request.get_json()['lost']
+            allclients = request.get_json()['all']
+            result = {'message': {'result': allclients}}
+            socketio.emit('client-update', result)
+            return ('', 204)
 
     def simple_daq(method_name, msg):
         daq = get_daq(address)
@@ -151,11 +163,4 @@ def create_app():
     socketio.init_app(app)
 
     return app
-
-def bg_task(daq):
-    while True:
-        daq._controller.request_clients()
-        result = daq._controller.receive(None)
-        socketio.emit('client-update', result)
-        socketio.sleep(0.5)
 
