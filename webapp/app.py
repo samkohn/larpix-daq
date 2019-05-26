@@ -100,15 +100,7 @@ def create_app():
 
     @socketio.on('command/run_routine')
     def run_routine(msg):
-        daq = get_daq(address)
-        result_id = msg['id']
-        routine_name = msg['params'][0]
-        params = msg['params'][1:]
-        for result in daq.run_routine(routine_name, *params):
-            logging.debug(result)
-            result['id'] = result_id
-            result['display'] = msg['display']
-            emit('action-update', result)
+        generator_daq('run_routine', msg)
 
     @socketio.on('command/configure_chip')
     def configure_chip(msg):
