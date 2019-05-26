@@ -35,43 +35,50 @@ class Operator(object):
         self.configurations = {}
         self._controller = moddaq.Controller(address)
 
-    def _receive_loop(self):
+    def _receive_loop(self, timeout=None):
         header = None
-        while header not in end_receive_loop_headers:
-            result = self._controller.receive(None)
-            header = result['header']
-            yield result
+        max_loops = 10
+        nloops = 0
+        while (header not in end_receive_loop_headers
+                and nloops < max_loops):
+            result = self._controller.receive(timeout)
+            nloops += 1
+            if result is not None:
+                header = result['header']
+                yield result
+        if result is None:
+            yield None
 
     ### Configurations
 
-    def configure_chip(self, chip, name, value, channel=''):
+    def configure_chip(self, chip, name, value, channel='', timeout=None):
         '''
         Set the configuration in software for the specified ASIC.
 
         '''
         self._controller.send_action('LArPix board', 'configure_chip',
                 [chip, name, value, channel])
-        for result in self._receive_loop():
+        for result in self._receive_loop(timeout):
             yield result
 
-    def write_configuration(self, chip):
+    def write_configuration(self, chip, timeout=None):
         '''
         Send the configuration values from software onto the ASIC.
 
         '''
         self._controller.send_action('LArPix board', 'write_config',
                 [chip])
-        for result in self._receive_loop():
+        for result in self._receive_loop(timeout):
             yield result
 
-    def read_configuration(self, chip):
+    def read_configuration(self, chip, timeout=None):
         '''
         Read the configuration values from the ASIC.
 
         '''
         self._controller.send_action('LArPix board', 'read_config',
                 [chip])
-        for result in self._receive_loop():
+        for result in self._receive_loop(timeout):
             yield result
 
     def load_configuration(self, name):
@@ -90,7 +97,7 @@ class Operator(object):
             action_ids.append(new_id)
         return action_ids
 
-    def validate_configuration(self, chip):
+    def validate_configuration(self, chip, timeout=None):
         '''
         Read the configuration from the specified LArPix ASIC and return
         ``(True/False, {name: (actual, stored)})``.
@@ -98,7 +105,7 @@ class Operator(object):
         '''
         self._controller.send_action('LArPix board', 'validate_config',
                 [chip])
-        for result in self._receive_loop():
+        for result in self._receive_loop(timeout):
             yield result
 
     def learn_configuration(self):
@@ -123,7 +130,7 @@ class Operator(object):
                 'fetch_configs', [])
         return action_id
 
-    def retrieve_configuration(self, chip):
+    def retrieve_configuration(self, chip, timeout=None):
         '''
         Return a dict of the current configuration stored in software
         for the given chipid.
@@ -134,7 +141,7 @@ class Operator(object):
         for result in self._receive_loop():
             yield result
 
-    def send_configuration(self, updates):
+    def send_configuration(self, updates, timeout=None):
         '''
         Send the given configuration updates to the LArPix control
         software.
@@ -160,14 +167,14 @@ class Operator(object):
         for result in self._receive_loop():
             yield result
 
-    def run_routine(self, name, *args):
+    def run_routine(self, name, *args, timeout=None):
         '''
         Run the given routine and return the routine's output.
 
         '''
         self._controller.send_action('LArPix board',
                 'run_routine', [name] + list(args))
-        for result in self._receive_loop():
+        for result in self._receive_loop(timeout):
             yield result
 
 
@@ -209,7 +216,8 @@ class Operator(object):
         '''
         pass
 
-    def data_rate(self, start_time, end_time, chip_or_channel):
+    def data_rate(self, start_time, end_time, chip_or_channel,
+            timeout=None):
         '''
         Return the data rate for the specified ASIC or channel between
         ``start_time`` and ``end_time``, as long as it's within the
@@ -217,10 +225,11 @@ class Operator(object):
 
         '''
         self._controller.send_action('Run data', 'data_rate', [])
-        for result in self._receive_loop():
+        for result in self._receive_loop(timeout):
             yield result
 
-    def fetch_packets(self, start_time, end_time, chip_or_channel):
+    def fetch_packets(self, start_time, end_time, chip_or_channel,
+            timeout=None):
         '''
         Return all the packets produced by the specified ASIC or channel
         between ``start_time`` and ``end_time``, as long as they're from
@@ -228,16 +237,16 @@ class Operator(object):
 
         '''
         self._controller.send_action('Run data', 'packets', [])
-        for result in self._receive_loop():
+        for result in self._receive_loop(timeout):
             yield result
 
-    def fetch_messages(self):
+    def fetch_messages(self, timeout=None):
         '''
         Return the messages produced by the DAQ system.
 
         '''
         self._controller.send_action('Run data', 'messages', [])
-        for result in self._receive_loop():
+        for result in self._receive_loop(timeout):
             yield result
 
     def enable_channel(self, channel):

@@ -66,11 +66,20 @@ def create_app():
     def generator_daq(method_name, msg):
         daq = get_daq(address)
         method = getattr(daq, method_name)
-        for result in method(*msg['params']):
+        for result in method(*msg['params'], timeout=1):
             logging.debug(result)
+            if result is None:
+                result = {
+                        'id': msg['id'],
+                        'display': msg['display'],
+                        'message': {
+                            'result': 'ERROR: timed out',
+                            },
+                        }
             result['id'] = msg['id']
             result['display'] = msg['display']
             emit('action-update', result)
+            yield_to_socketio(socketio)
 
     @socketio.on('command/prepare-run')
     def prepare_run(msg):
@@ -155,4 +164,15 @@ def create_app():
     socketio.init_app(app)
 
     return app
+
+def yield_to_socketio(socketio):
+    '''
+    Momentarily yield to the socketio/server process.
+
+    This is necessary to send multiple spaced-out socketio messages in a
+    long-running (i.e. blocking) method. Without this, the socketio
+    server never gets a chance to send the intermediary messages.
+
+    '''
+    socketio.sleep(0)
 
