@@ -31,3 +31,33 @@ def from_unicode_coding(unicode_stream):
     '''
     raise NotImplementedError()
 
+def toDict(packets):
+    return [p.export() for p in packets]
+
+def fromDict(jsonlist):
+    type_map = {
+            'data': 0,
+            'test': 1,
+            'config write': 2,
+            'config read': 3,
+            }
+    packets = []
+    for item in jsonlist:
+        p = Packet()
+        p.packet_type = item['type']
+        p.chipid = item['chipid']
+        p.parity = item['parity']
+        if item['type'] == 'data':
+            p.channel = item['channel']
+            p.timestamp = item['timestamp']
+            p.dataword = item['adc_counts']
+            p.fifo_half_flag = item['fifo_half']
+            p.fifo_full_flag = item['fifo_full']
+        elif item['type'] == 'test':
+            p.counter = item['counter']
+        elif (item['type'] == 'config write'
+                or item['type'] == 'config read'):
+            p.register_address = item['register']
+            p.register_data = item['value']
+    return packets
+

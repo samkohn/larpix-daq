@@ -31,24 +31,13 @@ def announce_lost_client(client_name, all_client_names):
 def announce_state_change(new_state, old_state):
     r = requests.post(server + '/state', json={'new':
         new_state, 'old': old_state})
-def new_action(client, action, params):
-    print("NEW ACTION FOR %s: %s(%s)" % (client, action, params))
-def finished_action(client, action, params, result):
-    print("FINISHED ACTION FOR %s: %s(%s) = %s" % (client, action,
-        params, result))
 announce = EventHandler.EventHandler('new_component', announce_new_client)
 announce_lost = EventHandler.EventHandler('lost_component',
         announce_lost_client)
 announce_state = EventHandler.EventHandler('state_change',
         announce_state_change)
-handle_new_action = EventHandler.EventHandler('action_request',
-        new_action)
-handle_finished_action = EventHandler.EventHandler('action_complete',
-        finished_action)
 core.addHandler(announce)
 core.addHandler(announce_lost)
 core.addHandler(announce_state)
-core.addHandler(handle_new_action)
-core.addHandler(handle_finished_action)
 
 core.run()

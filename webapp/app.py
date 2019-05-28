@@ -54,6 +54,14 @@ def create_app():
             socketio.emit('client-update', result)
             return ('', 204)
 
+    @app.route('/packets', methods=['POST'])
+    def packets():
+        result = {
+                'packets': request.get_json()
+                }
+        socketio.emit('data-update', result)
+        return ('', 204)
+
     def simple_daq(method_name, msg):
         daq = get_daq(address)
         method = getattr(daq, method_name)

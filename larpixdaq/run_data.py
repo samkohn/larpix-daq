@@ -6,6 +6,7 @@ Record packets from the current run and compute various statistics.
 import time
 import logging
 
+import requests
 from moddaq import Consumer, protocol
 from larpix.larpix import Packet
 
@@ -41,6 +42,7 @@ class RunData(object):
         self.packets = []
         self.messages = []
         self.start_time = 0
+        self._sent_index = 0
         return
 
     def _data_rate(self):
@@ -51,7 +53,7 @@ class RunData(object):
         try:
             npackets = len(self.packets)
             time_elapsed = time.time() - self.start_time
-            return str(npackets/time_elapsed)
+            return '%.2f' % (npackets/time_elapsed)
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
@@ -63,7 +65,7 @@ class RunData(object):
 
         '''
         try:
-            return pformat.to_unicode_coding(self.packets)
+            return pformat.toDict(self.packets)
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
@@ -80,6 +82,9 @@ class RunData(object):
             return 'ERROR: %s' % e
 
     def run(self):
+        t_last_send = time.time()
+        r = requests.post('http://localhost:5561/packets', json={'rate':0,
+            'packets':[]})
         while True:
             messages = self._consumer.receive(1)
             for message in messages:
@@ -94,6 +99,9 @@ class RunData(object):
                             and info_message == 'Beginning run'):
                         self.start_time = time.time()
                         self._consumer.log('INFO', 'Received start message')
+            r = requests.post('http://localhost:5561/packets',
+                    json={'rate':self._data_rate(),
+                        'packets':self._packets()[-100:]})
 
 
 
