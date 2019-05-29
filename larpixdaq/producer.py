@@ -362,12 +362,10 @@ try:
                 board.io.queue.append(([p], p.bytes() + b'\x00'))
             data = board.read()
             logging.debug('just took data')
-            metadata = {'name': 'LArPix board', 'timestamp':
-                    time.time()}
             to_produce = toBytes(data[0])
             logging.debug('producing packets: %s...' %
                     repr(to_produce[:20]))
-            producer.produce(metadata, to_produce)
+            producer.produce(to_produce)
         else:
             if board.io.is_listening:
                 board.stop_listening()
