@@ -4,6 +4,8 @@ Webapp for LArPixDAQ.
 '''
 import json
 import logging
+import os
+os.environ['EVENTLET'] = "yes"
 
 from flask import Flask, render_template, current_app, request
 
@@ -71,10 +73,16 @@ def create_app():
         logging.debug(result)
         emit('action-update', result)
 
-    def generator_daq(method_name, msg):
-        daq = get_daq(address)
+    def run_in_background(target, *args, **kwargs):
+        socketio.start_background_task(target,
+                current_app._get_current_object(), *args,
+                **kwargs)
+
+    def generator_daq(app, method_name, msg):
+        with app.app_context():
+            daq = get_daq(address)
         method = getattr(daq, method_name)
-        for result in method(*msg['params'], timeout=1):
+        for result in method(*msg['params'], timeout=None):
             logging.debug(result)
             if result is None:
                 result = {
@@ -86,7 +94,7 @@ def create_app():
                         }
             result['id'] = msg['id']
             result['display'] = msg['display']
-            emit('action-update', result)
+            socketio.emit('action-update', result)
             yield_to_socketio(socketio)
 
     @socketio.on('command/prepare-run')
@@ -104,44 +112,44 @@ def create_app():
     @socketio.on('command/data-rate')
     def end_run(msg):
         msg['params'] = [0, 0, 0]
-        generator_daq('data_rate', msg)
+        run_in_background(generator_daq, 'data_rate', msg)
 
     @socketio.on('command/packets')
     def end_run(msg):
         msg['params'] = [0, 0, 0]
-        generator_daq('fetch_packets', msg)
+        run_in_background(generator_daq, 'fetch_packets', msg)
 
     @socketio.on('command/messages')
     def end_run(msg):
-        generator_daq('fetch_messages', msg)
+        run_in_background(generator_daq, 'fetch_messages', msg)
 
     @socketio.on('command/run_routine')
     def run_routine(msg):
-        generator_daq('run_routine', msg)
+        run_in_background(generator_daq, 'run_routine', msg)
 
     @socketio.on('command/configure_chip')
     def configure_chip(msg):
-        generator_daq('configure_chip', msg)
+        run_in_background(generator_daq, 'configure_chip', msg)
 
     @socketio.on('command/write_config')
     def configure_chip(msg):
-        generator_daq('write_configuration', msg)
+        run_in_background(generator_daq, 'write_configuration', msg)
 
     @socketio.on('command/verify_config')
     def verify_config(msg):
-        generator_daq('validate_configuration', msg)
+        run_in_background(generator_daq, 'validate_configuration', msg)
 
     @socketio.on('command/retrieve_config')
     def retrieve_config(msg):
-        generator_daq('retrieve_configuration', msg)
+        run_in_background(generator_daq, 'retrieve_configuration', msg)
 
     @socketio.on('command/send_config')
     def send_config(msg):
-        generator_daq('send_configuration', msg)
+        run_in_background(generator_daq, 'send_configuration', msg)
 
     @socketio.on('command/read_config')
     def read_config(msg):
-        generator_daq('read_configuration', msg)
+        run_in_background(generator_daq, 'read_configuration', msg)
 
     @app.route('/routines')
     def get_routines():
