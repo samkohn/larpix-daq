@@ -280,8 +280,12 @@ try:
 
         '''
         try:
+            def send_data(packet_list, metadata=None):
+                producer.produce(toBytes(packet_list), metadata)
+                return
             global board
-            board, result = routines[name].func(board, *args)
+            board, result = routines[name].func(board, send_data,
+                    producer.send_info, *args)
             return result
         except Exception as e:
             logging.exception(e)
@@ -304,23 +308,23 @@ try:
     ############
     # Routines #
     ############
-    def quickstart(board, board_name='pcb-1'):
+    def quickstart(board, send_data, send_info, board_name='pcb-1'):
         '''
         quickstart(board_name='pcb-1')
 
         Start up the board and configure chips to a quiescent state.
 
         '''
+        send_info('Running quickstart')
         board = larpix_quickstart.quickcontroller(board_name,
                 io=board.io)
+        send_data([larpix.Packet()])
+        send_info('Completed quickstart')
         result = 'success'
         return board, result
 
     routines = {
             'quickstart': Routine('quickstart', quickstart, ['board']),
-            'leakage_current_scan': Routine('leakage_current_scan',
-                lambda board, chip: (board, 'Ran scan on %s' % chip),
-                ['chip', 'timeout', 'repeats']),
     }
     routines.update(producer_routines)
     producer.register_action('configure_chip', configure_chip,
