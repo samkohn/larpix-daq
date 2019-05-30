@@ -99,9 +99,10 @@ class RunData(object):
                             and info_message == 'Beginning run'):
                         self.start_time = time.time()
                         self._consumer.log('INFO', 'Received start message')
-            r = requests.post('http://localhost:5561/packets',
-                    json={'rate':self._data_rate(),
-                        'packets':self._packets()[-100:]})
+            if self._consumer.state == 'RUN':
+                r = requests.post('http://localhost:5561/packets',
+                        json={'rate':self._data_rate(),
+                            'packets':self._packets()[-100:]})
 
 
 
