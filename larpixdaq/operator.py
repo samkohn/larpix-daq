@@ -35,6 +35,9 @@ class Operator(object):
         self.configurations = {}
         self._controller = moddaq.Controller(address)
 
+    def cleanup(self):
+        self._controller.cleanup()
+
     def _receive_loop(self, timeout=None):
         header = None
         max_loops = 10
