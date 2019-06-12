@@ -66,6 +66,23 @@ def create_app():
         socketio.emit('data-update', result)
         return ('', 204)
 
+    @app.route('/boards', methods=['GET', 'POST'])
+    def boards():
+        if request.method == 'GET':
+            daq = get_daq(address)
+            for result in daq.get_boards():
+                pass
+            retrieved = result['message']['result']
+            return json.dumps(retrieved)
+        elif request.method == 'POST':
+            daq = get_daq(address)
+            filename = request.get_json()['filename']
+            if request.get_json()['shortname']:
+                filename = 'controller/' + filename + '_chip_info.json'
+            for result in daq.load_board(filename):
+                pass
+            return ('', 204)
+
     def simple_daq(method_name, msg):
         daq = get_daq(address)
         method = getattr(daq, method_name)

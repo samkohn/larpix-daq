@@ -52,6 +52,17 @@ class Operator(object):
         if result is None:
             yield None
 
+    def get_boards(self, timeout=None):
+        self._controller.send_action('LArPix board', 'get_boards', [])
+        for result in self._receive_loop(timeout):
+            yield result
+
+    def load_board(self, filename, timeout=None):
+        self._controller.send_action('LArPix board', 'load_board',
+                [filename])
+        for result in self._receive_loop(timeout):
+            yield result
+
     ### Configurations
 
     def configure_chip(self, chip, name, value, channel='', timeout=None):

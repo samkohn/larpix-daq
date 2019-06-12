@@ -7,8 +7,9 @@ import ast
 import json
 from moddaq import Producer
 import larpix.quickstart as larpix_quickstart
-from larpix.fakeio import FakeIO
-from larpix.zmq_io import ZMQ_IO
+from larpix.io.fakeio import FakeIO
+from larpix.io.zmq_io import ZMQ_IO
+import larpix.configs as configs
 import larpix.larpix as larpix
 
 from larpixdaq.packetformat import toBytes
@@ -37,26 +38,25 @@ try:
         board.io = FakeIO()
     else:
         board.io = ZMQ_IO('tcp://10.0.1.6')
-    board.use_all_chips = True
+    board.load('controller/pcb-1_chip_info.json')
     state = ''
     run = False
     configurations = {
             'startup': 'startup.json',
             'quiet': 'quiet.json',
     }
-    def configure_chip(chipid_str, name_str, value_str, channel_str=''):
+    def configure_chip(key, name_str, value_str, channel_str=''):
         '''
-        configure_chip(chipid, name, value, channel='')
+        configure_chip(key, name, value, channel='')
 
         Update the configuration stored in software.
 
         '''
         try:
             global board
-            chipid = int(chipid_str)
             value = int(value_str)
             channel = int(channel_str) if channel_str else None
-            chip = board.get_chip(chipid, 0)
+            chip = board.get_chip(key)
             if channel is None:
                 setattr(chip.config, name_str, value)
             else:
@@ -85,33 +85,31 @@ try:
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
-    def configure_name(name, chipid, iochain):
+    def configure_name(name, key):
         '''
-        configure_name(name, chipid, iochain)
+        configure_name(name, key)
 
         Load the named configuration into software.
 
         '''
         try:
             global board
-            chip = board.get_chip(chipid, iochain)
+            chip = board.get_chip(key)
             chip.config.load(configurations[name])
             return 'success'
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
-    def write_config(chipid_str, registers_str='', write_read_str='',
+    def write_config(key, registers_str='', write_read_str='',
             message=''):
         '''
-        write_config(chipid, registers='', write_read='', message='')
+        write_config(key, registers='', write_read='', message='')
 
         Send the given configuration to the board.
 
         '''
         try:
             global board
-            chipid = int(chipid_str)
-            chip = board.get_chip(chipid, 0)
             if registers_str:  # treat as int or list
                 registers = ast.literal_eval(registers_str)
             else:
@@ -120,24 +118,22 @@ try:
                 write_read = 0
             if not message:
                 message = None
-            board.write_configuration(chip, registers, write_read,
+            board.write_configuration(key, registers, write_read,
                     message)
             return 'success'
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
 
-    def read_config(chipid_str, registers_str='', message=''):
+    def read_config(key, registers_str='', message=''):
         '''
-        read_config(chipid, registers='', message='')
+        read_config(key, registers='', message='')
 
         Read configurations from the board.
 
         '''
         try:
             global board
-            chipid = int(chipid_str)
-            chip = board.get_chip(chipid, 0)
             if registers_str:  # treat as int or list
                 registers = ast.literal_eval(registers_str)
             else:
@@ -145,13 +141,14 @@ try:
             if not message:
                 message = None
             if isinstance(board.io, FakeIO):
+                chip = board.get_chip(key)
                 packets = chip.get_configuration_packets(
                         larpix.Packet.CONFIG_WRITE_PACKET)
                 for p in packets:
                     p.packet_type = larpix.Packet.CONFIG_READ_PACKET
                     p.assign_parity()
                 board.io.queue.append((packets, b'some bytes'))
-            board.read_configuration(chip, registers, message=message)
+            board.read_configuration(key, registers, message=message)
             packets = board.reads[-1]
             result = '\n'.join(str(p) for p in packets if p.packet_type
                     == p.CONFIG_READ_PACKET)
@@ -159,9 +156,9 @@ try:
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
-    def validate_config(chipid_str):
+    def validate_config(key):
         '''
-        validate_config(chipid)
+        validate_config(key)
 
         Read configurations from the board and compare to those stored
         in software, returning True if they're equal.
@@ -169,22 +166,21 @@ try:
         '''
         try:
             global board
-            chipid = int(chipid_str)
-            chip = board.get_chip(chipid, 0)
             if isinstance(board.io, FakeIO):
+                chip = board.get_chip(key)
                 packets = chip.get_configuration_packets(
                         larpix.Packet.CONFIG_WRITE_PACKET)
                 for p in packets:
                     p.packet_type = larpix.Packet.CONFIG_READ_PACKET
                 board.io.queue.append((packets, b'some bytes'))
-            result = board.verify_configuration(chip_id=chipid)
+            result = board.verify_configuration(key)
             return result
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
-    def learn_config(chipid_str):
+    def learn_config(key):
         '''
-        learn_config(chipid)
+        learn_config(key)
 
         Read configurations from the board and use the values to
         overwrite the configuration in software.
@@ -192,13 +188,12 @@ try:
         '''
         try:
             global board
-            chipid = int(chipid_str)
-            chip = board.get_chip(chipid, 0)
+            chip = board.get_chip(key)
             if isinstance(board.io, FakeIO):
                 packets = chip.get_configuration_packets(
                         larpix.Packet.CONFIG_WRITE_PACKET)
                 board.io.queue.append((packets, b'some bytes'))
-            board.read_configuration(chip)
+            board.read_configuration(key)
             updates_dict = {}
             for packet in board.reads[-1]:
                 if packet.packet_type == packet.CONFIG_READ_PACKET:
@@ -222,7 +217,7 @@ try:
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
-    def retrieve_config(chipid_str):
+    def retrieve_config(key):
         '''
         retrieve_config(chipid)
 
@@ -232,8 +227,7 @@ try:
         '''
         try:
             global board
-            chipid = int(chipid_str)
-            chip = board.get_chip(chipid, 0)
+            chip = board.get_chip(key)
             return chip.config.to_dict()
         except Exception as e:
             logging.exception(e)
@@ -247,9 +241,54 @@ try:
         '''
         try:
             global board
-            for chipid_str, chip_updates in updates.items():
-                chip = board.get_chip(int(chipid_str), 0)
+            for key, chip_updates in updates.items():
+                chip = board.get_chip(key)
                 chip.config.from_dict(chip_updates)
+            return 'success'
+        except Exception as e:
+            logging.exception(e)
+            return 'ERROR: %s' % e
+    def get_boards():
+        '''
+        get_boards()
+
+        List the available boards and chip keys.
+
+        '''
+        try:
+            boards = [
+                    'pcb-1',
+                    'pcb-2',
+                    'pcb-3',
+                    'pcb-4',
+                    'pcb-5',
+                    'pcb-6',
+                    'pcb-10',
+                    ]
+            to_return = []
+            for boardname in boards:
+                result = configs.load('controller/' + boardname +
+                        '_chip_info.json')
+                boarditem = {
+                        'name': result['name'],
+                        'chips': [x[0] for x in result['chip_list']],
+                        }
+                to_return.append(boarditem)
+            return to_return
+        except Exception as e:
+            logging.exception(e)
+            return 'ERROR: %s' % e
+    def load_board(filename):
+        '''
+        load_board(filename)
+
+        Load the board (Controller) configuration located at the given
+        filename.
+
+        '''
+        try:
+            global board
+            board.load(filename)
             return 'success'
         except Exception as e:
             logging.exception(e)
@@ -343,6 +382,10 @@ try:
     producer.register_action('retrieve_config', retrieve_config,
             retrieve_config.__doc__)
     producer.register_action('send_config', send_config, send_config.__doc__)
+    producer.register_action('get_boards', get_boards,
+            get_boards.__doc__)
+    producer.register_action('load_board', load_board,
+            load_board.__doc__)
     producer.register_action('list_routines', list_routines,
             list_routines.__doc__)
     producer.register_action('run_routine', run_routine, run_routine.__doc__)
