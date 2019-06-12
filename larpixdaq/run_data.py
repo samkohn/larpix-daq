@@ -83,8 +83,11 @@ class RunData(object):
 
     def run(self):
         t_last_send = time.time()
-        r = requests.post('http://localhost:5561/packets', json={'rate':0,
-            'packets':[]})
+        try:
+            r = requests.post('http://localhost:5561/packets', json={'rate':0,
+                'packets':[]})
+        except:
+            pass
         while True:
             messages = self._consumer.receive(1)
             for message in messages:
@@ -100,9 +103,12 @@ class RunData(object):
                         self.start_time = time.time()
                         self._consumer.log('INFO', 'Received start message')
             if self._consumer.state == 'RUN':
-                r = requests.post('http://localhost:5561/packets',
-                        json={'rate':self._data_rate(),
-                            'packets':self._packets()[-100:]})
+                try:
+                    r = requests.post('http://localhost:5561/packets',
+                            json={'rate':self._data_rate(),
+                                'packets':self._packets()[-100:]})
+                except:
+                    pass
 
 
 

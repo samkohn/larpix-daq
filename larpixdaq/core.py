@@ -23,14 +23,23 @@ core.state = 'START'
 
 server = 'http://localhost:5561/'
 def announce_new_client(client_name, all_client_names):
-    r = requests.post(server + '/component',
-            json={'new':client_name, 'all':all_client_names})
+    try:
+        r = requests.post(server + '/component',
+                json={'new':client_name, 'all':all_client_names})
+    except:
+        pass
 def announce_lost_client(client_name, all_client_names):
-    r = requests.delete(server + '/component',
-            json={'lost':client_name, 'all':all_client_names})
+    try:
+        r = requests.delete(server + '/component',
+                json={'lost':client_name, 'all':all_client_names})
+    except:
+        pass
 def announce_state_change(new_state, old_state):
-    r = requests.post(server + '/state', json={'new':
-        new_state, 'old': old_state})
+    try:
+        r = requests.post(server + '/state', json={'new':
+            new_state, 'old': old_state})
+    except:
+        pass
 announce = EventHandler.EventHandler('new_component', announce_new_client)
 announce_lost = EventHandler.EventHandler('lost_component',
         announce_lost_client)
