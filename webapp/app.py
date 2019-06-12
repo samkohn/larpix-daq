@@ -3,7 +3,6 @@ Webapp for LArPixDAQ.
 
 '''
 import json
-import logging
 import os
 os.environ['EVENTLET'] = "yes"
 
@@ -90,7 +89,7 @@ def create_app():
         daq.cleanup()
         result['id'] = msg['id']
         result['display'] = msg['display']
-        logging.debug(result)
+        current_app.logger.debug(result)
         emit('action-update', result)
 
     def run_in_background(target, *args, **kwargs):
@@ -101,21 +100,21 @@ def create_app():
     def generator_daq(app, method_name, msg):
         with app.app_context():
             daq = get_daq(address)
-        method = getattr(daq, method_name)
-        for result in method(*msg['params'], timeout=None):
-            logging.debug(result)
-            if result is None:
-                result = {
-                        'id': msg['id'],
-                        'display': msg['display'],
-                        'message': {
-                            'result': 'ERROR: timed out',
-                            },
-                        }
-            result['id'] = msg['id']
-            result['display'] = msg['display']
-            socketio.emit('action-update', result)
-            yield_to_socketio(socketio)
+            method = getattr(daq, method_name)
+            for result in method(*msg['params'], timeout=None):
+                app.logger.debug(result)
+                if result is None:
+                    result = {
+                            'id': msg['id'],
+                            'display': msg['display'],
+                            'message': {
+                                'result': 'ERROR: timed out',
+                                },
+                            }
+                result['id'] = msg['id']
+                result['display'] = msg['display']
+                socketio.emit('action-update', result)
+                yield_to_socketio(socketio)
         daq.cleanup()
 
     @socketio.on('command/prepare-run')
@@ -177,7 +176,7 @@ def create_app():
         o = get_daq(address)
         for result in o.list_routines():
             pass
-        print(result)
+        app.logger.debug(result)
         return json.dumps(result)
 
     @app.route('/command/actionid/<actionid>')
