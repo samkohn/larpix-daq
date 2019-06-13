@@ -9,6 +9,7 @@ import logging
 import requests
 from moddaq import Consumer, protocol
 from larpix.larpix import Packet
+from larpix.format.hdf5format import to_file
 
 import larpixdaq.packetformat as pformat
 
@@ -43,6 +44,8 @@ class RunData(object):
         self.messages = []
         self.start_time = 0
         self._sent_index = 0
+        self.runno = 0
+        self.state = self._consumer.state
         return
 
     def _data_rate(self):
@@ -81,6 +84,14 @@ class RunData(object):
             logging.exception(e)
             return 'ERROR: %s' % e
 
+    def _begin_run(self):
+        self.start_time = time.time()
+        self.packets = []
+        self.runno += 1
+
+    def _end_run(self):
+        to_file('runs/run_%d.h5' % self.runno, self.packets)
+
     def run(self):
         t_last_send = time.time()
         try:
@@ -90,6 +101,12 @@ class RunData(object):
             pass
         while True:
             messages = self._consumer.receive(1)
+            if self.state != self._consumer.state:
+                if self._consumer.state == 'RUN':
+                    self._begin_run()
+                elif self.state == 'RUN':
+                    self._end_run()
+                self.state = self._consumer.state
             for message in messages:
                 if message[0] == 'DATA':
                     _, metadata, data = message
@@ -100,9 +117,12 @@ class RunData(object):
                     self.messages.append(info_message)
                     if (header['component'] == 'LArPix board'
                             and info_message == 'Beginning run'):
-                        self.start_time = time.time()
                         self._consumer.log('INFO', 'Received start message')
-            if self._consumer.state == 'RUN':
+                    elif (header['component'] == 'LArPix board'
+                            and info_message == 'Ending run'):
+                        self._consumer.log('INFO', 'Received end message')
+
+            if self.state == 'RUN':
                 try:
                     r = requests.post('http://localhost:5561/packets',
                             json={'rate':self._data_rate(),

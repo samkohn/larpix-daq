@@ -395,6 +395,8 @@ try:
         producer.receive(0.4)
         if state != producer.state:
             print('State update: New state: %s' % producer.state)
+            if state == 'RUN':
+                producer.send_info('Ending run')
             state = producer.state
             if state == 'RUN':
                 producer.send_info('Beginning run')
