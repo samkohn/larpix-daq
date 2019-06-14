@@ -3,3 +3,4 @@ datalog
 __pycache__
 *.txt
 *.h5
+build
