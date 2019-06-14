@@ -15,7 +15,8 @@ socketio = SocketIO(async_mode='eventlet')
 address = None
 
 def create_app():
-    app = Flask(__name__)
+    app = Flask(__name__, static_folder='build/static',
+            template_folder='build')
 
     @app.route('/')
     def hello():
