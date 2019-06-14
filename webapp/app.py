@@ -27,7 +27,6 @@ def create_app():
             daq = get_daq(address)
             daq._controller.request_state()
             result = daq._controller.receive(None)
-            daq.cleanup()
             return json.dumps(result)
         else:
             newstate = request.get_json()['new']
@@ -42,7 +41,6 @@ def create_app():
             daq = get_daq(address)
             daq._controller.request_clients()
             result = daq._controller.receive(None)
-            daq.cleanup()
             return json.dumps(result)
         elif request.method == 'POST':
             newclient = request.get_json()['new']
@@ -86,7 +84,6 @@ def create_app():
         daq = get_daq(address)
         method = getattr(daq, method_name)
         result = method()
-        daq.cleanup()
         result['id'] = msg['id']
         result['display'] = msg['display']
         current_app.logger.debug(result)
@@ -113,9 +110,9 @@ def create_app():
                             }
                 result['id'] = msg['id']
                 result['display'] = msg['display']
+                app.logger.debug('emitting result: %s', result)
                 socketio.emit('action-update', result)
                 yield_to_socketio(socketio)
-        daq.cleanup()
 
     @socketio.on('command/prepare-run')
     def prepare_run(msg):

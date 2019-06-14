@@ -14,6 +14,8 @@ def get_daq(address):
 
 def close_daq(e=None):
     daq = g.pop('daq', None)
+    if daq is not None:
+        daq.cleanup()
 
 def init_app(app):
     app.teardown_appcontext(close_daq)
