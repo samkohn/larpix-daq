@@ -127,8 +127,9 @@ class RunData(object):
                     r = requests.post('http://localhost:5561/packets',
                             json={'rate':self._data_rate(),
                                 'packets':self._packets()[-100:]})
-                except:
-                    pass
+                except requests.ConnectionError as e:
+                    self._consumer.log('DEBUG', 'Failed to send packets '
+                            'to server: %s ' % e)
 
 
 

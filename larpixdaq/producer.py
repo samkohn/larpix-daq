@@ -400,6 +400,7 @@ try:
             state = producer.state
             if state == 'RUN':
                 producer.send_info('Beginning run')
+                producer.produce(toBytes([larpix.TimestampPacket(int(time.time()))]))
         if state == 'RUN':
             if not board.io.is_listening:
                 logging.debug('about to start listening')
@@ -410,6 +411,7 @@ try:
                 p.assign_parity()
                 board.io.queue.append(([p], p.bytes() + b'\x00'))
             data = board.read()
+            data[0].append(larpix.TimestampPacket(int(time.time())))
             logging.debug('just took data')
             to_produce = toBytes(data[0])
             logging.debug('producing packets: %s...' %

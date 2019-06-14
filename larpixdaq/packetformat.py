@@ -4,17 +4,20 @@ Formatter for LArPix data packets + medatadata to/from bytestreams.
 '''
 import json
 
-from larpix.larpix import Packet
+from larpix.larpix import Packet, TimestampPacket
 
 def toBytes(packets):
-    return b'0.1/' + b'\xAA'.join(p.bytes() for p in packets)
+    return b'0.1/' + b''.join(p.bytes() + (
+            b'\xAA' if isinstance(p, Packet) else b'\xBB')
+        for p in packets)
 
 def fromBytes(bytestream):
     version, slash, stream = bytestream.partition(b'/')
     if slash == b'':
         raise ValueError('No version found')
     split = [stream[n:n+8] for n in range(0, len(stream), 8)]
-    packets = [Packet(x[:7]) for x in split]
+    packets = [Packet(x[:7]) if x[7]==b'\xAA'[0] else
+            TimestampPacket(code=x[:7]) for x in split]
     return packets
 
 def to_unicode_coding(packets):
