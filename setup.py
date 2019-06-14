@@ -8,7 +8,7 @@ setup(
         author='Sam Kohn',
         author_email='skohn@lbl.gov',
         packages=find_packages(),
-        install_requires=['moddaq', 'flask >=1.0.0', 'flask-socketio >=3.0.0',
-            'eventlet ~= 0.24.1', 'requests ~= 2.18',
+        install_requires=['moddaq', 'flask >=1.0.0', 'flask-socketio >=3.0',
+            'eventlet >= 0.24', 'requests ~= 2.18',
             'larpix-control ~= 2.2'],
 )
