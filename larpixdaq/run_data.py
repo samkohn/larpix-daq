@@ -95,7 +95,7 @@ class RunData(object):
     def run(self):
         t_last_send = time.time()
         try:
-            r = requests.post('http://localhost:5561/packets', json={'rate':0,
+            r = requests.post('http://localhost:5000/packets', json={'rate':0,
                 'packets':[]})
         except:
             pass
@@ -124,7 +124,7 @@ class RunData(object):
 
             if self.state == 'RUN':
                 try:
-                    r = requests.post('http://localhost:5561/packets',
+                    r = requests.post('http://localhost:5000/packets',
                             json={'rate':self._data_rate(),
                                 'packets':self._packets()[-100:]})
                 except requests.ConnectionError as e:

@@ -21,7 +21,7 @@ allowed_states = ['', 'START', 'INIT', 'READY', 'RUN',
 core.isStateAllowed = lambda x: x in allowed_states
 core.state = 'START'
 
-server = 'http://localhost:5561/'
+server = 'http://localhost:5000/'
 def announce_new_client(client_name, all_client_names):
     try:
         r = requests.post(server + '/component',
