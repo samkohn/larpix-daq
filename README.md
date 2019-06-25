@@ -144,3 +144,54 @@ data consumers such as data monitor and offline storage.
 
 In the future, the aggregator will support receiving data from multiple
 LArPix boards.
+
+## Run data
+
+Location: ``larpixdaq/run_data.py``
+
+Example invocation: ``python run_data.py``
+
+### Help text
+
+TODO!!! Use argparse for run data
+
+### Arguments
+
+None
+
+### Description
+
+Run data provides the online data monitor for the LArPix DAQ. It tracks
+the packet rate and can send packets for manual inspection.
+
+TODO!!! Make more properties available
+
+## Offline data storage
+
+TODO!!! Add this script
+
+## Operator
+
+The LArPix DAQ Operator module provides the interface into the DAQ core
+for all DAQ operations.
+
+Operator methods interact with the DAQ core to accomplish the
+desired behavior. For the simplest interactions, a single request
+and response exchange occurs, and the result is returned.
+(TODO!!! unify this interface) For most interactions, there are
+multiple responses for a single request - e.g. an immediate
+acknowledgement of receipt and then the eventual result. The
+methods implementing these interactions return [generator
+iterators](https://docs.python.org/3/glossary.html#term-generator)
+rather than values. The way to call these functions usually looks like
+
+```python
+o = Operator()
+final_responses = []
+for response in o.run_routine('calibrate'):
+    print(response)
+    # interact with response object within loop
+# When the loop ends, the last response received is still saved in
+# the response object
+final_responses.append(response)
+```
