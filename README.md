@@ -168,7 +168,29 @@ TODO!!! Make more properties available
 
 ## Offline data storage
 
-TODO!!! Add this script
+Location: ``larpixdaq/offline_storage.py``
+
+Example invocation: ``python offline_storage.py``
+
+### Help text
+
+```
+usage: offline_storage.py [-h] [--core CORE]
+
+optional arguments:
+  -h, --help   show this help message and exit
+  --core CORE
+```
+
+### Arguments
+
+- ``--core``: Optional. The IP address of the DAQ core. Default:
+  ``tcp://127.0.0.1`` (localhost)
+
+### Description
+
+The offline storage script stores LArPix data to disk using the
+LArPix+HDF5 file format.
 
 ## Operator
 
