@@ -9,7 +9,6 @@ import logging
 import requests
 from moddaq import Consumer, protocol
 from larpix.larpix import Packet
-from larpix.logger.h5_logger import HDF5Logger
 
 import larpixdaq.packetformat as pformat
 
@@ -90,10 +89,7 @@ class RunData(object):
         self.runno += 1
 
     def _end_run(self):
-        logger = HDF5Logger(directory='runs')
-        logger.enable()
-        logger.record(self.packets)
-        logger.flush()
+        pass
 
     def run(self):
         t_last_send = time.time()
