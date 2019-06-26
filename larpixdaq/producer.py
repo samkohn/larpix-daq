@@ -14,6 +14,7 @@ import larpix.larpix as larpix
 
 from larpixdaq.packetformat import toBytes
 from larpixdaq.routines import Routine, producer_routines
+from larpixdaq.logger_producer import DAQLogger
 
 
 try:
@@ -39,6 +40,7 @@ try:
     else:
         board.io = ZMQ_IO('tcp://10.0.1.6')
     board.load('controller/pcb-1_chip_info.json')
+    board.logger = DAQLogger(producer)
     state = ''
     run = False
     configurations = {
@@ -411,12 +413,6 @@ try:
                 p.assign_parity()
                 board.io.queue.append(([p], p.bytes() + b'\x00'))
             data = board.read()
-            data[0].append(larpix.TimestampPacket(int(time.time())))
-            logging.debug('just took data')
-            to_produce = toBytes(data[0])
-            logging.debug('producing packets: %s...' %
-                    repr(to_produce[:20]))
-            producer.produce(to_produce)
         else:
             if board.io.is_listening:
                 board.stop_listening()
