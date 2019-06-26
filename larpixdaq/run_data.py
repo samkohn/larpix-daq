@@ -90,6 +90,8 @@ class RunData(object):
     def _begin_run(self):
         self.start_time = time.time()
         self.packets = []
+        self.datarates.clear()
+        self.datarate_timestamps.clear()
         self.runno += 1
 
     def _end_run(self):

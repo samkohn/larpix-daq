@@ -394,7 +394,7 @@ try:
     producer.register_action('sleep', sleep, sleep.__doc__)
     producer.request_state()
     while True:
-        producer.receive(0.4)
+        producer.receive(0.25)
         if state != producer.state:
             print('State update: New state: %s' % producer.state)
             if state == 'RUN':
@@ -403,13 +403,15 @@ try:
             if state == 'RUN':
                 producer.send_info('Beginning run')
                 producer.produce(toBytes([larpix.TimestampPacket(int(time.time()))]))
+                fake_timestamp = 0
         if state == 'RUN':
             if not board.io.is_listening:
                 logging.debug('about to start listening')
                 board.start_listening()
             if isinstance(board.io, FakeIO):
                 p = larpix.Packet()
-                p.timestamp = int(time.time()) % 100000
+                p.timestamp = fake_timestamp % 16777216
+                fake_timestamp += 1
                 p.assign_parity()
                 board.io.queue.append(([p], p.bytes() + b'\x00'))
             data = board.read()
