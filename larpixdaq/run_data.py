@@ -125,7 +125,7 @@ class RunData(object):
                 try:
                     r = requests.post('http://localhost:5000/packets',
                             json={'rate':self._data_rate(),
-                                'packets':self._packets()[-100:]})
+                                'packets':self._packets()[-100:][::-1]})
                 except requests.ConnectionError as e:
                     self._consumer.log('DEBUG', 'Failed to send packets '
                             'to server: %s ' % e)
