@@ -5,7 +5,7 @@ Record packets from the current run and compute various statistics.
 
 import time
 import logging
-from collections import deque
+from collections import deque, defaultdict
 
 import requests
 from moddaq import Consumer, protocol
@@ -41,7 +41,7 @@ class RunData(object):
         self._consumer.actions['packets'] = self._packets
         self._consumer.actions['messages'] = self._messages
         self.packets = []
-        self.timestamps = []
+        self.timestamps = defaultdict(int)
         self.messages = []
         self.datarates = deque([], 100)
         self.datarate_timestamps = deque([], 100)
@@ -104,9 +104,9 @@ class RunData(object):
                 'packets':[]})
         except:
             pass
+        last_second = int(time.time())
         while True:
             messages = self._consumer.receive(1)
-            next_tick = False
             if self.state != self._consumer.state:
                 if self._consumer.state == 'RUN':
                     self._begin_run()
@@ -118,13 +118,7 @@ class RunData(object):
                     _, metadata, data = message
                     packets = pformat.fromBytes(data)
                     self.packets.extend(packets)
-                    new_timestamp = int(time.time())
-                    if len(self.timestamps) > 0:
-                        last_packet_timestamp = self.timestamps[-1]
-                    else:
-                        last_packet_timestamp = new_timestamp
-                    next_tick = last_packet_timestamp != new_timestamp
-                    self.timestamps.extend([new_timestamp]*len(packets))
+                    self.timestamps[int(time.time())] += len(packets)
                 elif message[0] == 'INFO':
                     _, header, info_message = message
                     self.messages.append(info_message)
@@ -135,11 +129,12 @@ class RunData(object):
                             and info_message == 'Ending run'):
                         self._consumer.log('INFO', 'Received end message')
 
+            now = int(time.time())
+            next_tick = now != last_second
             if self.state == 'RUN' and next_tick:
-                packets_last_second = (
-                        self.timestamps.count(last_packet_timestamp))
-                self.datarates.append(packets_last_second)
-                self.datarate_timestamps.append(last_packet_timestamp)
+                self.datarates.append(self.timestamps[last_second])
+                self.datarate_timestamps.append(last_second)
+                last_second = now
                 try:
                     r = requests.post('http://localhost:5000/packets',
                             json={'rate':self._data_rate(),
