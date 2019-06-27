@@ -5,6 +5,8 @@ import logging
 import time
 import ast
 import json
+import random
+
 from moddaq import Producer
 import larpix.quickstart as larpix_quickstart
 from larpix.io.fakeio import FakeIO
@@ -411,6 +413,7 @@ try:
             if isinstance(board.io, FakeIO):
                 p = larpix.Packet()
                 p.timestamp = fake_timestamp % 16777216
+                p.dataword = int(sum(random.random() for _ in range(256)))
                 fake_timestamp += 1
                 p.assign_parity()
                 board.io.queue.append(([p], p.bytes() + b'\x00'))

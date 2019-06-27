@@ -45,6 +45,7 @@ class RunData(object):
         self.messages = []
         self.datarates = deque([], 100)
         self.datarate_timestamps = deque([], 100)
+        self.adcs = deque([], 1000)
         self.start_time = 0
         self._sent_index = 0
         self.runno = 0
@@ -92,6 +93,7 @@ class RunData(object):
         self.packets = []
         self.datarates.clear()
         self.datarate_timestamps.clear()
+        self.adcs.clear()
         self.runno += 1
 
     def _end_run(self):
@@ -119,6 +121,8 @@ class RunData(object):
                     packets = pformat.fromBytes(data)
                     self.packets.extend(packets)
                     self.timestamps[int(time.time())] += len(packets)
+                    self.adcs.extend(p.dataword for p in packets if
+                            p.packet_type == Packet.DATA_PACKET)
                 elif message[0] == 'INFO':
                     _, header, info_message = message
                     self.messages.append(info_message)
@@ -140,7 +144,9 @@ class RunData(object):
                             json={'rate':self._data_rate(),
                                 'packets':self._packets()[-100:][::-1],
                                 'rate_list':list(self.datarates),
-                                'rate_times':list(self.datarate_timestamps),})
+                                'rate_times':list(self.datarate_timestamps),
+                                'adcs': list(self.adcs),
+                                })
                 except requests.ConnectionError as e:
                     self._consumer.log('DEBUG', 'Failed to send packets '
                             'to server: %s ' % e)
