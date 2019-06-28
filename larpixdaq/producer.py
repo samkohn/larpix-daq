@@ -411,12 +411,18 @@ try:
                 logging.debug('about to start listening')
                 board.start_listening()
             if isinstance(board.io, FakeIO):
-                p = larpix.Packet()
-                p.timestamp = fake_timestamp % 16777216
-                p.dataword = int(sum(random.random() for _ in range(256)))
-                fake_timestamp += 1
-                p.assign_parity()
-                board.io.queue.append(([p], p.bytes() + b'\x00'))
+                packets = []
+                for _ in range(100):
+                    p = larpix.Packet()
+                    p.timestamp = fake_timestamp % 16777216
+                    p.dataword = int(sum(random.random() for _ in range(256)))
+                    chip = random.choice(list(board.chips.values()))
+                    p.chipid = chip.chip_id
+                    p.channel_id = random.randint(0, 31)
+                    fake_timestamp += 1
+                    p.assign_parity()
+                    packets.append(p)
+                board.io.queue.append((packets, p.bytes() + b'\x00'))
             data = board.read()
         else:
             if board.io.is_listening:

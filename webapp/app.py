@@ -81,6 +81,21 @@ def create_app():
                 pass
             return ('', 204)
 
+    @app.route('/pixels', methods=['GET', 'POST'])
+    def pixels():
+        filename = request.args.get('filename', '')
+        daq = get_daq(address)
+        if request.method == 'GET':
+            for result in daq.retrieve_pixel_layout():
+                pass
+            retrieved = result['message']['result']
+            return json.dumps(retrieved)
+        elif request.method == 'POST':
+            for result in daq.load_pixel_layout(filename):
+                pass
+            retrieved = result['message']['result']
+            return json.dumps(retrieved)
+
     def simple_daq(method_name, msg):
         daq = get_daq(address)
         method = getattr(daq, method_name)

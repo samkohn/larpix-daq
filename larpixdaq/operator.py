@@ -63,6 +63,18 @@ class Operator(object):
         for result in self._receive_loop(timeout):
             yield result
 
+    def retrieve_pixel_layout(self, filename, timeout=None):
+        self._controller.send_action('Run data', 'retrieve_pixel_layout',
+                [filename])
+        for result in self._receive_loop(timeout):
+            yield result
+
+    def load_pixel_layout(self, filename, timeout=None):
+        self._controller.send_action('Run data', 'load_pixel_layout',
+                [filename])
+        for result in self._receive_loop(timeout):
+            yield result
+
     ### Configurations
 
     def configure_chip(self, chip, name, value, channel='', timeout=None):

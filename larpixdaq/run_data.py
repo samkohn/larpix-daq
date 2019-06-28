@@ -6,10 +6,12 @@ Record packets from the current run and compute various statistics.
 import time
 import logging
 from collections import deque, defaultdict
+import json
 
 import requests
 from moddaq import Consumer, protocol
 from larpix.larpix import Packet
+from larpixgeometry import layouts
 
 import larpixdaq.packetformat as pformat
 
@@ -37,10 +39,17 @@ class RunData(object):
         }
         self._consumer = Consumer(name='Run data', connections=['AGGREGATOR'],
                 **consumer_args)
-        self._consumer.actions['data_rate'] = self._data_rate
-        self._consumer.actions['packets'] = self._packets
-        self._consumer.actions['messages'] = self._messages
-        self.packets = []
+        self._consumer.register_action('data_rate', self._data_rate,
+                self._data_rate.__doc__)
+        self._consumer.register_action('packets', self._packets,
+                self._packets.__doc__)
+        self._consumer.register_action('messages', self._messages,
+                self._messages.__doc__)
+        self._consumer.register_action('retrieve_pixel_layout',
+                self.retrieve_pixel_layout, self.retrieve_pixel_layout.__doc__)
+        self._consumer.register_action('load_pixel_layout',
+                self.load_pixel_layout, self.load_pixel_layout.__doc__)
+        self.packets = deque([], 100000)
         self.timestamps = defaultdict(int)
         self.messages = []
         self.datarates = deque([], 100)
@@ -50,7 +59,58 @@ class RunData(object):
         self._sent_index = 0
         self.runno = 0
         self.state = self._consumer.state
+        self.layout = {'chips':[], 'pixels':[]}
+        self.pixel_lookup = {}
         return
+
+    def create_pixel_lookup(self, chip_pixel_list):
+        '''
+        Create a pixel lookup from a given list of chip-pixel
+        assignments.
+
+        chip_pixel_list is of the form
+
+        ```
+        [
+          [chip0id, [ch0pixel, ch1pixel, ...]],
+          [chip1id, [ch0pixel, ch1pixel, ...]],
+          ...
+        ]
+        ```
+
+        '''
+        pixel_lookup = {}
+        for (chipid, pixels) in chip_pixel_list:
+            pixel_lookup[chipid] = pixels
+        return pixel_lookup
+
+    def retrieve_pixel_layout(self):
+        '''
+        retrieve_pixel_layout()
+
+        Return the current pixel layout.
+
+        '''
+        try:
+            return self.layout
+        except Exception as e:
+            logging.exception(e)
+            return 'ERROR: %s' % e
+
+    def load_pixel_layout(self, name):
+        '''
+        load_pixel_layout(name)
+
+        Retrieve and store the pixel layout from larpix-geometry.
+
+        '''
+        try:
+            self.layout = layouts.load(name)
+            self.pixel_lookup = self.create_pixel_lookup(self.layout['chips'])
+            return self.layout
+        except Exception as e:
+            logging.exception(e)
+            return 'ERROR: %s' % e
 
     def _data_rate(self):
         '''
@@ -61,6 +121,27 @@ class RunData(object):
             npackets = len(self.packets)
             time_elapsed = time.time() - self.start_time
             return '%.2f' % (npackets/time_elapsed)
+        except Exception as e:
+            logging.exception(e)
+            return 'ERROR: %s' % e
+
+    def _data_rate_by_channel(self):
+        '''
+        Return a list with each pixel's data rate over the past set of
+        packets.
+
+        '''
+        try:
+            rates = [0]*len(self.layout['pixels'])
+            for packet in self.packets:
+                if packet.packet_type == Packet.DATA_PACKET:
+                    chipid, channelid = packet.chipid, packet.channel_id
+                    pixel_list = self.pixel_lookup.get(chipid, None)
+                    if pixel_list is not None:
+                        pixelid = pixel_list[channelid]
+                        if pixelid is not None:
+                            rates[pixelid] += 1
+            return rates
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
@@ -90,7 +171,7 @@ class RunData(object):
 
     def _begin_run(self):
         self.start_time = time.time()
-        self.packets = []
+        self.packets.clear()
         self.datarates.clear()
         self.datarate_timestamps.clear()
         self.adcs.clear()
@@ -146,10 +227,12 @@ class RunData(object):
                                 'rate_list':list(self.datarates),
                                 'rate_times':list(self.datarate_timestamps),
                                 'adcs': list(self.adcs),
+                                'rate_bypixel': self._data_rate_by_channel(),
                                 })
                 except requests.ConnectionError as e:
                     self._consumer.log('DEBUG', 'Failed to send packets '
                             'to server: %s ' % e)
+
 
 
 
