@@ -42,6 +42,7 @@ try:
     else:
         board.io = ZMQ_IO('tcp://10.0.1.6')
     board.load('controller/pcb-1_chip_info.json')
+    current_boardname = 'pcb-1'
     board.logger = DAQLogger(producer)
     state = ''
     run = False
@@ -256,7 +257,8 @@ try:
         '''
         get_boards()
 
-        List the available boards and chip keys.
+        List the available boards and chip keys, and the current board
+        name.
 
         '''
         try:
@@ -269,7 +271,7 @@ try:
                     'pcb-6',
                     'pcb-10',
                     ]
-            to_return = []
+            board_data = []
             for boardname in boards:
                 result = configs.load('controller/' + boardname +
                         '_chip_info.json')
@@ -277,8 +279,8 @@ try:
                         'name': result['name'],
                         'chips': [x[0] for x in result['chip_list']],
                         }
-                to_return.append(boarditem)
-            return to_return
+                board_data.append(boarditem)
+            return {'data': board_data, 'current': current_boardname}
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
@@ -292,6 +294,9 @@ try:
         '''
         try:
             global board
+            data = configs.load(filename)
+            global current_boardname
+            current_boardname = data['name']
             board.load(filename)
             return 'success'
         except Exception as e:
