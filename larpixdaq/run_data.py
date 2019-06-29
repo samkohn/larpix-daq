@@ -209,6 +209,7 @@ class RunData(object):
                 self.datarates.append(self.timestamps[last_second])
                 self.datarate_timestamps.append(last_second)
                 pixel_rates_last_second = self.pixel_rates[last_second][:]
+                del self.timestamps[last_second]
                 del self.pixel_rates[last_second]
                 last_second = now
                 try:
