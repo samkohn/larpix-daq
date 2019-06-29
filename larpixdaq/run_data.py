@@ -51,6 +51,7 @@ class RunData(object):
                 self.load_pixel_layout, self.load_pixel_layout.__doc__)
         self.packets = deque([], 100000)
         self.timestamps = defaultdict(int)
+        self.pixel_rates=defaultdict(([0]*832).copy)
         self.messages = []
         self.datarates = deque([], 100)
         self.datarate_timestamps = deque([], 100)
@@ -125,27 +126,6 @@ class RunData(object):
             logging.exception(e)
             return 'ERROR: %s' % e
 
-    def _data_rate_by_channel(self):
-        '''
-        Return a list with each pixel's data rate over the past set of
-        packets.
-
-        '''
-        try:
-            rates = [0]*len(self.layout['pixels'])
-            for packet in self.packets:
-                if packet.packet_type == Packet.DATA_PACKET:
-                    chipid, channelid = packet.chipid, packet.channel_id
-                    pixel_list = self.pixel_lookup.get(chipid, None)
-                    if pixel_list is not None:
-                        pixelid = pixel_list[channelid]
-                        if pixelid is not None:
-                            rates[pixelid] += 1
-            return rates
-        except Exception as e:
-            logging.exception(e)
-            return 'ERROR: %s' % e
-
     def _packets(self):
         '''
         Return a bytestream of all the packets received, converted to a
@@ -202,6 +182,15 @@ class RunData(object):
                     packets = pformat.fromBytes(data)
                     self.packets.extend(packets)
                     self.timestamps[int(time.time())] += len(packets)
+                    pixel_rates_now = self.pixel_rates[int(time.time())]
+                    for packet in packets:
+                        if packet.packet_type == Packet.DATA_PACKET:
+                            chipid, channelid = packet.chipid, packet.channel_id
+                            pixel_list = self.pixel_lookup.get(chipid, None)
+                            if pixel_list is not None:
+                                pixelid = pixel_list[channelid]
+                                if pixelid is not None:
+                                    pixel_rates_now[pixelid] += 1
                     self.adcs.extend(p.dataword for p in packets if
                             p.packet_type == Packet.DATA_PACKET)
                 elif message[0] == 'INFO':
@@ -219,6 +208,8 @@ class RunData(object):
             if self.state == 'RUN' and next_tick:
                 self.datarates.append(self.timestamps[last_second])
                 self.datarate_timestamps.append(last_second)
+                pixel_rates_last_second = self.pixel_rates[last_second][:]
+                del self.pixel_rates[last_second]
                 last_second = now
                 try:
                     r = requests.post('http://localhost:5000/packets',
@@ -227,7 +218,7 @@ class RunData(object):
                                 'rate_list':list(self.datarates),
                                 'rate_times':list(self.datarate_timestamps),
                                 'adcs': list(self.adcs),
-                                'rate_bypixel': self._data_rate_by_channel(),
+                                'rate_bypixel': pixel_rates_last_second,
                                 })
                 except requests.ConnectionError as e:
                     self._consumer.log('DEBUG', 'Failed to send packets '

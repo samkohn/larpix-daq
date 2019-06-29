@@ -417,7 +417,7 @@ try:
                 board.start_listening()
             if isinstance(board.io, FakeIO):
                 packets = []
-                for _ in range(100):
+                for _ in range(300):
                     p = larpix.Packet()
                     p.timestamp = fake_timestamp % 16777216
                     p.dataword = int(sum(random.random() for _ in range(256)))
