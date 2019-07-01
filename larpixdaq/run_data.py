@@ -85,15 +85,53 @@ class RunData(object):
             pixel_lookup[chipid] = pixels
         return pixel_lookup
 
+    def create_chip_lookup(self, chip_pixel_list):
+        '''
+        Create a chip+channel lookup based on pixel ID.
+
+        The input chip_pixel_list is of the form
+
+        ```
+        [
+          [chip0id, [ch0pixel, ch1pixel, ...]],
+          [chip1id, [ch0pixel, ch1pixel, ...]],
+          ...
+        ]
+        ```
+
+        The output is of the form
+
+        ```
+        {
+          pixel0id: {'channel': pixel0channel, 'chip': pixel0chip},
+          pixel1id: {'channel': pixel1channel, 'chip': pixel1chip},
+          ...
+        }
+        ```
+
+        '''
+        chip_lookup = {}
+        for (chipid, pixels) in chip_pixel_list:
+            for (channelid, pixelid) in enumerate(pixels):
+                chip_lookup[pixelid] = {
+                        'channel': channelid,
+                        'chip': chipid,
+                        }
+        return chip_lookup
+
     def retrieve_pixel_layout(self):
         '''
         retrieve_pixel_layout()
 
-        Return the current pixel layout.
+        Return the current pixel layout and pixel->{chip, channel}
+        mapping.
 
         '''
         try:
-            return self.layout
+            return {
+                    'layout': self.layout,
+                    'lookup': self.chip_lookup,
+                    }
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
@@ -108,7 +146,11 @@ class RunData(object):
         try:
             self.layout = layouts.load(name)
             self.pixel_lookup = self.create_pixel_lookup(self.layout['chips'])
-            return self.layout
+            self.chip_lookup = self.create_chip_lookup(self.layout['chips'])
+            return {
+                    'layout': self.layout,
+                    'lookup': self.chip_lookup,
+                    }
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
