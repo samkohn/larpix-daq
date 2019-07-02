@@ -52,6 +52,7 @@ class RunData(object):
         self.packets = deque([], 100000)
         self.timestamps = defaultdict(int)
         self.pixel_rates=defaultdict(([0]*832).copy)
+        self.max_pixel_rates = [0]*832
         self.messages = []
         self.datarates = deque([], 100)
         self.datarate_timestamps = deque([], 100)
@@ -198,6 +199,8 @@ class RunData(object):
         self.packets.clear()
         self.datarates.clear()
         self.datarate_timestamps.clear()
+        self.pixel_rates.clear()
+        self.max_pixel_rates = [0] * 832
         self.adcs.clear()
         self.runno += 1
 
@@ -225,8 +228,9 @@ class RunData(object):
                     _, metadata, data = message
                     packets = pformat.fromBytes(data)
                     self.packets.extend(packets)
-                    self.timestamps[int(time.time())] += len(packets)
-                    pixel_rates_now = self.pixel_rates[int(time.time())]
+                    now = int(time.time())
+                    self.timestamps[now] += len(packets)
+                    pixel_rates_now = self.pixel_rates[now]
                     for packet in packets:
                         if packet.packet_type == Packet.DATA_PACKET:
                             chip_key = str(packet.chip_key)
@@ -236,6 +240,10 @@ class RunData(object):
                                 pixelid = pixel_list[channelid]
                                 if pixelid is not None:
                                     pixel_rates_now[pixelid] += 1
+                                    if (pixel_rates_now[pixelid] >
+                                            self.max_pixel_rates[pixelid]):
+                                        self.max_pixel_rates[pixelid] = (
+                                                pixel_rates_now[pixelid])
                     self.adcs.extend(p.dataword for p in packets if
                             p.packet_type == Packet.DATA_PACKET)
                 elif message[0] == 'INFO':
@@ -265,6 +273,7 @@ class RunData(object):
                                 'rate_times':list(self.datarate_timestamps),
                                 'adcs': list(self.adcs),
                                 'rate_bypixel': pixel_rates_last_second,
+                                'maxrate_bypixel': self.max_pixel_rates,
                                 })
                 except requests.ConnectionError as e:
                     self._consumer.log('DEBUG', 'Failed to send packets '
