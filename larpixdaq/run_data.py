@@ -145,6 +145,8 @@ class RunData(object):
         '''
         try:
             self.layout = layouts.load(name)
+            for entry in self.layout['chips']:
+                entry[0] = '1-1-%d' % entry[0]
             self.pixel_lookup = self.create_pixel_lookup(self.layout['chips'])
             self.chip_lookup = self.create_chip_lookup(self.layout['chips'])
             return {
@@ -227,8 +229,9 @@ class RunData(object):
                     pixel_rates_now = self.pixel_rates[int(time.time())]
                     for packet in packets:
                         if packet.packet_type == Packet.DATA_PACKET:
-                            chipid, channelid = packet.chipid, packet.channel_id
-                            pixel_list = self.pixel_lookup.get(chipid, None)
+                            chip_key = str(packet.chip_key)
+                            channelid = packet.channel_id
+                            pixel_list = self.pixel_lookup.get(chip_key, None)
                             if pixel_list is not None:
                                 pixelid = pixel_list[channelid]
                                 if pixelid is not None:

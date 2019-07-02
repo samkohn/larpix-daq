@@ -277,7 +277,7 @@ try:
                         '_chip_info.json')
                 boarditem = {
                         'name': result['name'],
-                        'chips': [x[0] for x in result['chip_list']],
+                        'chips': result['chip_list'],
                         }
                 board_data.append(boarditem)
             return {'data': board_data, 'current': current_boardname}
@@ -426,6 +426,7 @@ try:
                     p.channel_id = random.randint(0, 31)
                     fake_timestamp += 1
                     p.assign_parity()
+                    p.chip_key = '%d-%d-%d' % (1, 1, chip.chip_id)
                     packets.append(p)
                 board.io.queue.append((packets, p.bytes() + b'\x00'))
             data = board.read()

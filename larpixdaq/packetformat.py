@@ -3,21 +3,62 @@ Formatter for LArPix data packets + medatadata to/from bytestreams.
 
 '''
 import json
+import struct
 
 from larpix.larpix import Packet, TimestampPacket
 
+def get_packet(packet_bytes):
+    byte_marker = packet_bytes[0]
+    if byte_marker == 0:
+        p = Packet(packet_bytes[1:8])
+        p.chip_key = '%d-%d-%d' % (
+                packet_bytes[8],
+                packet_bytes[9],
+                p.chipid)
+        return p
+    elif byte_marker == 1:
+        return TimestampPacket(code=packet_bytes[1:8])
+
+def format_packet(packet):
+    if isinstance(packet, Packet):
+        result = b'\x00' + packet.bytes()
+        result += struct.pack('BB', packet.chip_key.io_group,
+                packet.chip_key.io_channel)
+        return result
+    elif isinstance(packet, TimestampPacket):
+        return b'\x01' + packet.bytes() + b'\x00\x00'
+
+
 def toBytes(packets):
-    return b'0.1/' + b''.join(p.bytes() + (
-            b'\xAA' if isinstance(p, Packet) else b'\xBB')
-        for p in packets)
+    '''
+    Format the packets into a single bytestream.
+
+    Format:
+
+    - First 2 bytes, interpreted as integer values, are the version (major
+    is byte 0, minor is byte 1).
+    - Next is the ``b'/'`` character (`` == b'\x2F'``)
+    - Then each packet takes 10 bytes:
+        - First the packet-type indicator (``b'\x00'`` for data packets,
+          ``b'\x01'`` for timestamps, etc.)
+        - Then the packet data itself:
+            - For data packets, 7 UART bytes from ``Packet.bytes()``
+              (bytes 1-7), then the chip key data in 2 bytes: byte 8 is the
+              IO group, and byte 9 is the IO channel. (The chip ID is
+              contained in the UART bytes.)
+            - For the timestamp packets, 7 timestamp bytes followed by
+              2 unused bytes.
+
+    '''
+
+    return b'\x00\x01/' + b''.join(format_packet(p) for p in packets)
 
 def fromBytes(bytestream):
     version, slash, stream = bytestream.partition(b'/')
     if slash == b'':
         raise ValueError('No version found')
-    split = [stream[n:n+8] for n in range(0, len(stream), 8)]
-    packets = [Packet(x[:7]) if x[7]==b'\xAA'[0] else
-            TimestampPacket(code=x[:7]) for x in split]
+    split = [stream[n:n+10] for n in range(0, len(stream), 10)]
+    packets = [get_packet(x) for x in split]
     return packets
 
 def to_unicode_coding(packets):
