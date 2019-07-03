@@ -39,12 +39,6 @@ class RunData(object):
         }
         self._consumer = Consumer(name='Run data', connections=['AGGREGATOR'],
                 **consumer_args)
-        self._consumer.register_action('data_rate', self._data_rate,
-                self._data_rate.__doc__)
-        self._consumer.register_action('packets', self._packets,
-                self._packets.__doc__)
-        self._consumer.register_action('messages', self._messages,
-                self._messages.__doc__)
         self._consumer.register_action('retrieve_pixel_layout',
                 self.retrieve_pixel_layout, self.retrieve_pixel_layout.__doc__)
         self._consumer.register_action('load_pixel_layout',
@@ -54,6 +48,7 @@ class RunData(object):
         self.pixel_rates=defaultdict(([0]*832).copy)
         self.max_pixel_rates = [0]*832
         self.messages = []
+        self.num_messages_sent = 0
         self.datarates = deque([], 100)
         self.datarate_timestamps = deque([], 100)
         self.adcs = deque([], 1000)
@@ -258,7 +253,8 @@ class RunData(object):
 
             now = int(time.time())
             next_tick = now != last_second
-            if self.state == 'RUN' and next_tick:
+            if self.state == 'RUN' and next_tick or (len(self.messages) >
+                    self.num_messages_sent):
                 self.datarates.append(self.timestamps[last_second])
                 self.datarate_timestamps.append(last_second)
                 pixel_rates_last_second = self.pixel_rates[last_second][:]
@@ -269,12 +265,14 @@ class RunData(object):
                     r = requests.post('http://localhost:5000/packets',
                             json={'rate':self._data_rate(),
                                 'packets':self._packets()[-100:][::-1],
+                                'messages':self._messages()[-100:][::-1],
                                 'rate_list':list(self.datarates),
                                 'rate_times':list(self.datarate_timestamps),
                                 'adcs': list(self.adcs),
                                 'rate_bypixel': pixel_rates_last_second,
                                 'maxrate_bypixel': self.max_pixel_rates,
                                 })
+                    self.num_messages_sent = len(self.messages)
                 except requests.ConnectionError as e:
                     self._consumer.log('DEBUG', 'Failed to send packets '
                             'to server: %s ' % e)
