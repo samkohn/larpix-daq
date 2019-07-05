@@ -365,8 +365,7 @@ try:
         '''
         send_info('Running quickstart')
         board = larpix_quickstart.quickcontroller(board_name,
-                io=board.io)
-        send_data([larpix.Packet()])
+                io=board.io, logger=board.logger)
         send_info('Completed quickstart')
         result = 'success'
         return board, result
