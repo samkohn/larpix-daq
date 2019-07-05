@@ -102,6 +102,7 @@ def create_app():
         result = method()
         result['id'] = msg['id']
         result['display'] = msg['display']
+        result['name'] = msg['name']
         current_app.logger.debug(result)
         emit('action-update', result)
 
@@ -126,6 +127,7 @@ def create_app():
                             }
                 result['id'] = msg['id']
                 result['display'] = msg['display']
+                result['name'] = msg['name']
                 app.logger.debug('emitting result: %s', result)
                 socketio.emit('action-update', result)
                 yield_to_socketio(socketio)
