@@ -22,8 +22,13 @@ def get_packet(packet_bytes):
 def format_packet(packet):
     if isinstance(packet, Packet):
         result = b'\x00' + packet.bytes()
-        result += struct.pack('BB', packet.chip_key.io_group,
-                packet.chip_key.io_channel)
+        if packet.chip_key is None:
+            io_group = 0
+            io_channel = 0
+        else:
+            io_group = packet.chip_key.io_group
+            io_channel = packet.chip_key.io_channel
+        result += struct.pack('BB', io_group, io_channel)
         return result
     elif isinstance(packet, TimestampPacket):
         return b'\x01' + packet.bytes() + b'\x00\x00'
