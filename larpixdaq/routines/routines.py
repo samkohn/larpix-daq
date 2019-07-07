@@ -2,8 +2,31 @@
 Defines routines for different components.
 
 '''
+import importlib
+import os
+import sys
 
-# from blah import my_script
+ROUTINES = {}
+_routine_files = {}
+
+def init_routines(location=None):
+    if location is None:
+        location = os.path.dirname(__file__)
+    if location not in sys.path:
+        sys.path.insert(0, location)
+    importlib.invalidate_caches()
+    routine_files = [os.path.splitext(x)[0] for x in os.listdir(location) if (
+        x.endswith('.py') and x != __file__)]
+    for routine_file in routine_files:
+        if routine_file in _routine_files:
+            module_old = _routine_files[routine_file]
+            module = importlib.reload(module_old)
+        else:
+            module = importlib.import_module(routine_file)
+        _routine_files[routine_file] = module
+        if hasattr(module, 'registration'):
+            ROUTINES.update(module.registration)
+    print(ROUTINES)
 
 class Routine(object):
     '''
@@ -36,11 +59,3 @@ class Routine(object):
         self.func = func
         self.params = params
 
-def hello_world(controller, send_data, send_info, *args):
-    to_return = "Hello, %s" % args
-    send_info(to_return)
-    return controller, to_return
-
-producer_routines = {
-        'hello': Routine('hello', hello_world, ['name']),
-        }

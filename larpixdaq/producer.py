@@ -15,7 +15,7 @@ import larpix.configs as configs
 import larpix.larpix as larpix
 
 from larpixdaq.packetformat import toBytes
-from larpixdaq.routines import Routine, producer_routines
+from larpixdaq.routines.routines import ROUTINES, init_routines
 from larpixdaq.logger_producer import DAQLogger
 
 
@@ -310,12 +310,13 @@ try:
 
         '''
         try:
+            init_routines()
             return [{
                 'name': name,
                 'params': [{'name': p, 'type': 'input'} for p in
                     r.params],
                 }
-                for name, r in routines.items()
+                for name, r in ROUTINES.items()
                 ]
         except Exception as e:
             logging.exception(e)
@@ -332,7 +333,7 @@ try:
                 producer.produce(toBytes(packet_list), metadata)
                 return
             global board
-            board, result = routines[name].func(board, send_data,
+            board, result = ROUTINES[name].func(board, send_data,
                     producer.send_info, *args)
             return result
         except Exception as e:
@@ -356,24 +357,7 @@ try:
     ############
     # Routines #
     ############
-    def quickstart(board, send_data, send_info, board_name='pcb-1'):
-        '''
-        quickstart(board_name='pcb-1')
-
-        Start up the board and configure chips to a quiescent state.
-
-        '''
-        send_info('Running quickstart')
-        board = larpix_quickstart.quickcontroller(board_name,
-                io=board.io, logger=board.logger)
-        send_info('Completed quickstart')
-        result = 'success'
-        return board, result
-
-    routines = {
-            'quickstart': Routine('quickstart', quickstart, ['board']),
-    }
-    routines.update(producer_routines)
+    init_routines()
     producer.register_action('configure_chip', configure_chip,
             configure_chip.__doc__)
     producer.register_action('write_config', write_config,
