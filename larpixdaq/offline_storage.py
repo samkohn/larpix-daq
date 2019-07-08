@@ -22,6 +22,7 @@ class OfflineStorage(object):
 
     def run(self):
         try:
+            logger = None
             while True:
                 messages = self._consumer.receive(None)
                 if self.state != self._consumer.state:
@@ -32,8 +33,10 @@ class OfflineStorage(object):
                         self._consumer.log('INFO', 'Storing data in file'
                         ' %s' % logger.filename)
                     if self._consumer.state != 'RUN':
-                        logger.flush()
-                        logger.disable()
+                        if logger is not None:
+                            logger.flush()
+                            logger.disable()
+                        logger = None
                     self.state = self._consumer.state
                 for message in messages:
                     if message[0] == 'DATA':
@@ -41,8 +44,9 @@ class OfflineStorage(object):
                         packets = fromBytes(data)
                         logger.record(packets)
         finally:
-            logger.flush()
-            logger.disable()
+            if logger is not None:
+                logger.flush()
+                logger.disable()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
