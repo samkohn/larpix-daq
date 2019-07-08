@@ -10,6 +10,7 @@ import json
 
 import requests
 from moddaq import Consumer, protocol
+from moddaq.EventHandler import EventHandler
 from larpix.larpix import Packet
 from larpixgeometry import layouts
 
@@ -43,12 +44,19 @@ class RunData(object):
                 self.retrieve_pixel_layout, self.retrieve_pixel_layout.__doc__)
         self._consumer.register_action('load_pixel_layout',
                 self.load_pixel_layout, self.load_pixel_layout.__doc__)
+        self._consumer.addHandler(EventHandler('data_message',
+            self.handle_new_data))
+        self._consumer.addHandler(EventHandler('data_message',
+            self.maybe_send_update))
+        self._consumer.addHandler(EventHandler('info_message',
+            self.handle_new_message))
+        self._consumer.addHandler(EventHandler('info_message',
+            self.send_message_update))
         self.packets = deque([], 100000)
         self.timestamps = defaultdict(int)
         self.pixel_rates=defaultdict(([0]*832).copy)
         self.max_pixel_rates = [0]*832
         self.messages = []
-        self.num_messages_sent = 0
         self.datarates = deque([], 100)
         self.datarate_timestamps = deque([], 100)
         self.adcs = deque([], 1000)
@@ -58,7 +66,75 @@ class RunData(object):
         self.state = self._consumer.state
         self.layout = {'chips':[], 'pixels':[]}
         self.pixel_lookup = {}
+        self.last_second = int(time.time())
         return
+
+    def handle_new_message(self, origin, header, message):
+        self.messages.append(message)
+        if (header['component'] == 'LArPix board' and message ==
+                'Beginning run'):
+            self._consumer.log('INFO', 'Received start message')
+            self._start_run()
+        elif (header['component'] == 'LArPix board' and message ==
+                'Ending run'):
+            self._consumer.log('INFO', 'Received end message')
+            self._end_run()
+
+    def handle_new_data(self, origin, header, data):
+        packets = pformat.fromBytes(data)
+        self.packets.extend(packets)
+        now = int(time.time())
+        self.timestamps[now] += len(packets)
+        pixel_rates_now = self.pixel_rates[now]
+        for packet in packets:
+            if packet.packet_type == Packet.DATA_PACKET:
+                chip_key = str(packet.chip_key)
+                channelid = packet.channel_id
+                pixel_list = self.pixel_lookup.get(chip_key, None)
+                if pixel_list is not None:
+                    pixelid = pixel_list[channelid]
+                    if pixelid is not None:
+                        pixel_rates_now[pixelid] += 1
+                        if (pixel_rates_now[pixelid] >
+                                self.max_pixel_rates[pixelid]):
+                            self.max_pixel_rates[pixelid] = (
+                                    pixel_rates_now[pixelid])
+        self.adcs.extend(p.dataword for p in packets
+                if p.packet_type == Packet.DATA_PACKET)
+
+    def maybe_send_update(self, *args):
+        now = int(time.time())
+        next_tick = now != self.last_second
+        if next_tick:
+            self.datarates.append(self.timestamps[self.last_second])
+            self.datarate_timestamps.append(self.last_second)
+            pixel_rates_last_second = self.pixel_rates[self.last_second][:]
+            del self.timestamps[self.last_second]
+            del self.pixel_rates[self.last_second]
+            self.last_second = now
+            try:
+                r = requests.post('http://localhost:5000/packets',
+                        json={'rate':self._data_rate(),
+                            'packets':self._packets()[-100:][::-1],
+                            'messages':self._messages()[-100:][::-1],
+                            'rate_list':list(self.datarates),
+                            'rate_times':list(self.datarate_timestamps),
+                            'adcs': list(self.adcs),
+                            'rate_bypixel': pixel_rates_last_second,
+                            'maxrate_bypixel': self.max_pixel_rates,
+                            })
+            except requests.ConnectionError as e:
+                self._consumer.log('DEBUG', 'Failed to send packets '
+                        'to server: %s ' % e)
+
+    def send_message_update(self, *args):
+        try:
+            r = requests.post('http://localhost:5000/packets',
+                    json={'messages':self._messages()[-100:][::-1],}
+                    )
+        except requests.ConnectionError as e:
+            self._consumer.log('WARNING', 'Failed to send packets '
+                    'to server: %s' % e)
 
     def create_pixel_lookup(self, chip_pixel_list):
         '''
@@ -189,15 +265,17 @@ class RunData(object):
             logging.exception(e)
             return 'ERROR: %s' % e
 
-    def _begin_run(self):
-        self.start_time = time.time()
+    def _prepare_run(self):
         self.packets.clear()
         self.datarates.clear()
         self.datarate_timestamps.clear()
         self.pixel_rates.clear()
         self.max_pixel_rates = [0] * 832
         self.adcs.clear()
+
+    def _start_run(self):
         self.runno += 1
+        self.start_time = time.time()
 
     def _end_run(self):
         pass
@@ -213,73 +291,11 @@ class RunData(object):
         while True:
             messages = self._consumer.receive(1)
             if self.state != self._consumer.state:
-                if self._consumer.state == 'RUN':
-                    self._begin_run()
-                elif self.state == 'RUN':
-                    self._end_run()
+                old_state = self.state
+                new_state = self._consumer.state
+                if new_state == 'READY':
+                    self._prepare_run()
                 self.state = self._consumer.state
-            for message in messages:
-                if message[0] == 'DATA':
-                    _, metadata, data = message
-                    packets = pformat.fromBytes(data)
-                    self.packets.extend(packets)
-                    now = int(time.time())
-                    self.timestamps[now] += len(packets)
-                    pixel_rates_now = self.pixel_rates[now]
-                    for packet in packets:
-                        if packet.packet_type == Packet.DATA_PACKET:
-                            chip_key = str(packet.chip_key)
-                            channelid = packet.channel_id
-                            pixel_list = self.pixel_lookup.get(chip_key, None)
-                            if pixel_list is not None:
-                                pixelid = pixel_list[channelid]
-                                if pixelid is not None:
-                                    pixel_rates_now[pixelid] += 1
-                                    if (pixel_rates_now[pixelid] >
-                                            self.max_pixel_rates[pixelid]):
-                                        self.max_pixel_rates[pixelid] = (
-                                                pixel_rates_now[pixelid])
-                    self.adcs.extend(p.dataword for p in packets if
-                            p.packet_type == Packet.DATA_PACKET)
-                elif message[0] == 'INFO':
-                    _, header, info_message = message
-                    self.messages.append(info_message)
-                    if (header['component'] == 'LArPix board'
-                            and info_message == 'Beginning run'):
-                        self._consumer.log('INFO', 'Received start message')
-                    elif (header['component'] == 'LArPix board'
-                            and info_message == 'Ending run'):
-                        self._consumer.log('INFO', 'Received end message')
-
-            now = int(time.time())
-            next_tick = now != last_second
-            if self.state == 'RUN' and next_tick or (len(self.messages) >
-                    self.num_messages_sent):
-                self.datarates.append(self.timestamps[last_second])
-                self.datarate_timestamps.append(last_second)
-                pixel_rates_last_second = self.pixel_rates[last_second][:]
-                del self.timestamps[last_second]
-                del self.pixel_rates[last_second]
-                last_second = now
-                try:
-                    r = requests.post('http://localhost:5000/packets',
-                            json={'rate':self._data_rate(),
-                                'packets':self._packets()[-100:][::-1],
-                                'messages':self._messages()[-100:][::-1],
-                                'rate_list':list(self.datarates),
-                                'rate_times':list(self.datarate_timestamps),
-                                'adcs': list(self.adcs),
-                                'rate_bypixel': pixel_rates_last_second,
-                                'maxrate_bypixel': self.max_pixel_rates,
-                                })
-                    self.num_messages_sent = len(self.messages)
-                except requests.ConnectionError as e:
-                    self._consumer.log('DEBUG', 'Failed to send packets '
-                            'to server: %s ' % e)
-
-
-
-
 
 if __name__ == '__main__':
     try:
