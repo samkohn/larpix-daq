@@ -1,8 +1,9 @@
-# larpix-moddaq
+# larpix-daq
 
 LArPix DAQ is the data acquisition system for LArPix. It handles the
 data flow between the "data boards" and offline storage and includes
-data monitoring and operator control functionality.
+data monitoring and operator control functionality built on the xylem
+DAQ framework.
 
 LArPix DAQ consists of a set of scripts which are responsible for
 individual parts of the DAQ system's functionality, as well as an

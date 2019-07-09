@@ -1,6 +1,6 @@
 import argparse
 
-from moddaq import Consumer
+from xylem import Consumer
 from larpix.logger.h5_logger import HDF5Logger
 
 from larpixdaq.packetformat import fromBytes

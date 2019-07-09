@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from __future__ import print_function
-from moddaq import Core, EventHandler
+from xylem import Core, EventHandler
 import os
 import argparse
 import requests

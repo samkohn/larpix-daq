@@ -7,7 +7,7 @@ import ast
 import json
 import random
 
-from moddaq import Producer
+from xylem import Producer
 import larpix.quickstart as larpix_quickstart
 from larpix.io.fakeio import FakeIO
 from larpix.io.zmq_io import ZMQ_IO

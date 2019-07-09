@@ -2,7 +2,7 @@
 The operator interface for the LArPix DAQ system.
 
 '''
-import moddaq
+import xylem
 
 end_receive_loop_headers = {
         'ACTIONS',
@@ -33,7 +33,7 @@ class Operator(object):
         self.is_running = False
         self.routines = []
         self.configurations = {}
-        self._controller = moddaq.Controller(address)
+        self._controller = xylem.Controller(address)
 
     def cleanup(self):
         self._controller.cleanup()

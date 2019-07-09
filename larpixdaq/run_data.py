@@ -9,8 +9,8 @@ from collections import deque, defaultdict
 import json
 
 import requests
-from moddaq import Consumer, protocol
-from moddaq.EventHandler import EventHandler
+from xylem import Consumer, protocol
+from xylem.EventHandler import EventHandler
 from larpix.larpix import Packet
 from larpixgeometry import layouts
 

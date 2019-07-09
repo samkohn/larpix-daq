@@ -2,7 +2,7 @@ import logging
 import argparse
 import time
 
-from moddaq import Aggregator
+from xylem import Aggregator
 from larpix.larpix import Controller, Packet
 
 from larpixdaq.packetformat import fromBytes
