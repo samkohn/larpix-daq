@@ -50,61 +50,6 @@ try:
             'startup': 'startup.json',
             'quiet': 'quiet.json',
     }
-    def configure_chip(key, name_str, value_str, channel_str=''):
-        '''
-        configure_chip(key, name, value, channel='')
-
-        Update the configuration stored in software.
-
-        '''
-        try:
-            global board
-            value = int(value_str)
-            channel = int(channel_str) if channel_str else None
-            chip = board.get_chip(key)
-            if channel is None:
-                setattr(chip.config, name_str, value)
-            else:
-                getattr(chip.config, name_str)[channel] = value
-            logging.debug('updated configuration')
-            logging.debug(chip)
-            logging.debug(getattr(chip.config, name_str))
-            return 'success'
-        except Exception as e:
-            logging.exception(e)
-            return 'ERROR: %s' % e
-    def bulk_config(configuration_json):
-        '''
-        bulk_configure(configuration_json)
-
-        Update the configuration stored in software.
-
-        '''
-        try:
-            global board
-            bulk_config = json.loads(configuration_json)
-            for chipid, iochain in bulk_config:
-                chip = board.get_chip(chipid, iochain)
-                chip.config.from_dict(bulk_config[chipid, iochain])
-            return 'success'
-        except Exception as e:
-            logging.exception(e)
-            return 'ERROR: %s' % e
-    def configure_name(name, key):
-        '''
-        configure_name(name, key)
-
-        Load the named configuration into software.
-
-        '''
-        try:
-            global board
-            chip = board.get_chip(key)
-            chip.config.load(configurations[name])
-            return 'success'
-        except Exception as e:
-            logging.exception(e)
-            return 'ERROR: %s' % e
     def write_config(key, registers_str='', write_read_str='',
             message=''):
         '''
@@ -179,45 +124,6 @@ try:
                     p.packet_type = larpix.Packet.CONFIG_READ_PACKET
                 board.io.queue.append((packets, b'some bytes'))
             result = board.verify_configuration(key)
-            return result
-        except Exception as e:
-            logging.exception(e)
-            return 'ERROR: %s' % e
-    def learn_config(key):
-        '''
-        learn_config(key)
-
-        Read configurations from the board and use the values to
-        overwrite the configuration in software.
-
-        '''
-        try:
-            global board
-            chip = board.get_chip(key)
-            if isinstance(board.io, FakeIO):
-                packets = chip.get_configuration_packets(
-                        larpix.Packet.CONFIG_WRITE_PACKET)
-                board.io.queue.append((packets, b'some bytes'))
-            board.read_configuration(key)
-            updates_dict = {}
-            for packet in board.reads[-1]:
-                if packet.packet_type == packet.CONFIG_READ_PACKET:
-                    updates_dict[packet.register_address] = (
-                            packet.register_data)
-            chip.config.from_dict_registers(updates_dict)
-            return 'success'
-        except Exception as e:
-            logging.exception(e)
-            return 'ERROR: %s' % e
-    def fetch_configs():
-        '''
-        fetch_configs()
-
-        Return the ``configurations`` dict's keys.
-
-        '''
-        try:
-            result = list(configurations.keys())
             return result
         except Exception as e:
             logging.exception(e)
@@ -358,19 +264,11 @@ try:
     # Routines #
     ############
     init_routines()
-    producer.register_action('configure_chip', configure_chip,
-            configure_chip.__doc__)
     producer.register_action('write_config', write_config,
             write_config.__doc__)
     producer.register_action('read_config', read_config, read_config.__doc__)
     producer.register_action('validate_config', validate_config,
             validate_config.__doc__)
-    producer.register_action('learn_config', learn_config,
-            learn_config.__doc__)
-    producer.register_action('configure_name', configure_name,
-            configure_name.__doc__)
-    producer.register_action('fetch_configs', fetch_configs,
-            fetch_configs.__doc__)
     producer.register_action('retrieve_config', retrieve_config,
             retrieve_config.__doc__)
     producer.register_action('send_config', send_config, send_config.__doc__)

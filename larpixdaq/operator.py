@@ -77,16 +77,6 @@ class Operator(object):
 
     ### Configurations
 
-    def configure_chip(self, chip, name, value, channel='', timeout=None):
-        '''
-        Set the configuration in software for the specified ASIC.
-
-        '''
-        self._controller.send_action('LArPix board', 'configure_chip',
-                [chip, name, value, channel])
-        for result in self._receive_loop(timeout):
-            yield result
-
     def write_configuration(self, chip, timeout=None):
         '''
         Send the configuration values from software onto the ASIC.
@@ -107,22 +97,6 @@ class Operator(object):
         for result in self._receive_loop(timeout):
             yield result
 
-    def load_configuration(self, name):
-        '''
-        Load the given configuration onto the LArPix ASICs.
-
-        '''
-        action_ids = []
-        for (chipid, iochain) in self.chips:
-            new_id = self._controller.send_action('LArPix board',
-                    'configure_name', [name, chipid, iochain])
-            action_ids.append(new_id)
-        for (chipid, iochain) in self.chips:
-            new_id = self._controller.send_action('LArPix board',
-                    'write_config', [chipid])
-            action_ids.append(new_id)
-        return action_ids
-
     def validate_configuration(self, chip, timeout=None):
         '''
         Read the configuration from the specified LArPix ASIC and return
@@ -133,28 +107,6 @@ class Operator(object):
                 [chip])
         for result in self._receive_loop(timeout):
             yield result
-
-    def learn_configuration(self):
-        '''
-        Read the configuration from all of the LArPix ASICs and store
-        the actual values in software, replacing the existing values.
-
-        '''
-        action_ids = []
-        for (chipid, iochain) in self.chips:
-            action_id = self._controller.send_action('LArPix board',
-            'learn_config', [chipid])
-            action_ids.append(action_id)
-        return action_ids
-
-    def fetch_configurations(self):
-        '''
-        Return a list of available configurations.
-
-        '''
-        action_id = self._controller.send_action('LArPix board',
-                'fetch_configs', [])
-        return action_id
 
     def retrieve_configuration(self, chip, timeout=None):
         '''
@@ -233,61 +185,4 @@ class Operator(object):
         '''
         self._controller.request_state_change('READY')
         return self._controller.receive(None)
-
-    def run_info(self):
-        '''
-        Fetch current run info such as run number, start time, average
-        data rate, etc.
-
-        '''
-        pass
-
-    def data_rate(self, start_time, end_time, chip_or_channel,
-            timeout=None):
-        '''
-        Return the data rate for the specified ASIC or channel between
-        ``start_time`` and ``end_time``, as long as it's within the
-        current run.
-
-        '''
-        self._controller.send_action('Run data', 'data_rate', [])
-        for result in self._receive_loop(timeout):
-            yield result
-
-    def fetch_packets(self, start_time, end_time, chip_or_channel,
-            timeout=None):
-        '''
-        Return all the packets produced by the specified ASIC or channel
-        between ``start_time`` and ``end_time``, as long as they're from
-        the current run.
-
-        '''
-        self._controller.send_action('Run data', 'packets', [])
-        for result in self._receive_loop(timeout):
-            yield result
-
-    def fetch_messages(self, timeout=None):
-        '''
-        Return the messages produced by the DAQ system.
-
-        '''
-        self._controller.send_action('Run data', 'messages', [])
-        for result in self._receive_loop(timeout):
-            yield result
-
-    def enable_channel(self, channel):
-        '''
-        Enable the given channel/pixel for data taking, overriding the
-        current ASIC configuration.
-
-        '''
-        pass
-
-    def disable_channel(self, channel):
-        '''
-        Disable the given channel/pixel so it will not produce any
-        packets, overriding the current ASIC configuration.
-
-        '''
-        pass
 
