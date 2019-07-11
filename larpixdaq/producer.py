@@ -289,8 +289,10 @@ try:
             print('State update: New state: %s' % new_state)
             if old_state == 'RUN':
                 producer.send_info('Ending run')
+                board.logger.disable()
             if new_state == 'RUN':
                 producer.send_info('Beginning run')
+                board.logger.enable()
                 fake_timestamp = 0
             state = producer.state
         if state == 'RUN':

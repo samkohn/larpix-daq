@@ -11,14 +11,8 @@ class DAQLogger(Logger):
         self.producer = producer
 
     def record(self, data, direction=Logger.WRITE):
-        if self.is_enabled:
+        if self.is_enabled():
             to_produce = toBytes(data)
             self.producer.produce(to_produce)
         else:
             pass
-
-    def is_enabled(self):
-        return True
-
-    def is_open(self):
-        return True
