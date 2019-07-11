@@ -48,4 +48,7 @@ core.addHandler(announce)
 core.addHandler(announce_lost)
 core.addHandler(announce_state)
 
-core.run()
+try:
+    core.run()
+except KeyboardInterrupt:
+    pass

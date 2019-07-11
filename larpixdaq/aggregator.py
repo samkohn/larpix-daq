@@ -36,5 +36,7 @@ try:
         if state != aggregator.state:
             aggregator.log('DEBUG', 'State update. New state: %s' % aggregator.state)
             state = aggregator.state
+except KeyboardInterrupt:
+    pass
 finally:
     aggregator.cleanup()

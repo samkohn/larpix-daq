@@ -61,5 +61,7 @@ if __name__ == '__main__':
     offline_storage = OfflineStorage(args.core)
     try:
         offline_storage.run()
+    except KeyboardInterrupt:
+        pass
     finally:
         offline_storage._consumer.cleanup()

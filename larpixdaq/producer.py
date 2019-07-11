@@ -317,5 +317,7 @@ try:
         else:
             if board.io.is_listening:
                 board.stop_listening()
+except KeyboardInterrupt:
+    pass
 finally:
     producer.cleanup()

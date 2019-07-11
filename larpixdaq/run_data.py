@@ -301,5 +301,7 @@ if __name__ == '__main__':
     try:
         run_data = RunData('tcp://127.0.0.1')
         run_data.run()
+    except KeyboardInterrupt:
+        pass
     finally:
         run_data._consumer.cleanup()
