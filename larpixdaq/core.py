@@ -16,10 +16,9 @@ base_address = args.address + ':'
 
 core = Core(base_address + '5551', args.log_address)
 
-allowed_states = ['', 'START', 'INIT', 'READY', 'RUN',
-        'SUBROUTINE', 'STOP']
+allowed_states = ['READY', 'RUN', 'STOP']
+core.state = 'STOP'
 core.isStateAllowed = lambda x: x in allowed_states
-core.state = 'START'
 
 server = 'http://localhost:5000/'
 def announce_new_client(client_name, all_client_names):

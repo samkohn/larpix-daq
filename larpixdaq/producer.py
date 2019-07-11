@@ -284,14 +284,15 @@ try:
     while True:
         producer.receive(0.25)
         if state != producer.state:
-            print('State update: New state: %s' % producer.state)
-            if state == 'RUN':
+            old_state = state
+            new_state = producer.state
+            print('State update: New state: %s' % new_state)
+            if old_state == 'RUN':
                 producer.send_info('Ending run')
-            state = producer.state
-            if state == 'RUN':
+            if new_state == 'RUN':
                 producer.send_info('Beginning run')
-                producer.produce(toBytes([larpix.TimestampPacket(int(time.time()))]))
                 fake_timestamp = 0
+            state = producer.state
         if state == 'RUN':
             if not board.io.is_listening:
                 logging.debug('about to start listening')

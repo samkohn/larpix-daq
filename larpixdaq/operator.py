@@ -183,6 +183,6 @@ class Operator(object):
         analytics, and finalize the offline storage.
 
         '''
-        self._controller.request_state_change('READY')
+        self._controller.request_state_change('STOP')
         return self._controller.receive(None)
 

@@ -12,6 +12,27 @@ or used as a basis for a more sophisticated interactive program. The
 scripts can be run from the same or from different computers, as long as
 the IP addresses of the various computers are known.
 
+
+### System states
+
+There are three states the system can be in: ``READY``, ``RUN``, and
+``STOP``. The state is controlled through the ``Operator`` object using
+the methods ``prepare_run`` (transition to ``READY``), ``begin_run``
+(transition to ``START``), and ``end_run`` (transition to ``STOP``).
+
+- ``STOP``: Default state on startup. All components are not expecting
+  data.
+- ``READY``: Components should prepare to receive data. Data may arrive
+  at the component before the instruction to transition to the ``RUN``
+  state (though this is expected to be rare). The component should treat
+  that data as if it were received in the ``RUN`` state.
+- ``RUN``: Components should expect to receive data. Data should not be
+  produced in any other state.
+
+To mark the start and end of a run in the data flow, the ``producer.py`` script
+produces ``INFO`` messages with contents ``"Beginning run"`` and
+``"Ending run"``, respectively.
+
 ## Core
 
 - Location: ``larpixdaq/core.py``
