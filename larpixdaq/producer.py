@@ -18,39 +18,56 @@ from larpixdaq.packetformat import toBytes
 from larpixdaq.routines.routines import ROUTINES, init_routines
 from larpixdaq.logger_producer import DAQLogger
 
+class LArPixProducer(object):
 
-try:
-    parser = argparse.ArgumentParser()
-    parser.add_argument('address')
-    parser.add_argument('--core', default='tcp://127.0.0.1')
-    parser.add_argument('-d', '--debug', action='store_true')
-    parser.add_argument('--fake', action='store_true')
-    args = parser.parse_args()
-    if args.debug:
-        logging.basicConfig(level=logging.DEBUG)
-    address = args.address
-    core_url = args.core
-    core_address = core_url + ':5551'
-    kwargs = {
-            'core_address': core_address,
-            'heartbeat_time_ms': 300,
-    }
-    producer = Producer(address, name='LArPix board', group='BOARD', **kwargs)
-    board = larpix.Controller()
-    if args.fake:
-        board.io = FakeIO()
-    else:
-        board.io = ZMQ_IO('tcp://10.0.1.6')
-    board.load('controller/pcb-1_chip_info.json')
-    current_boardname = 'pcb-1'
-    board.logger = DAQLogger(producer)
-    state = ''
-    run = False
-    configurations = {
-            'startup': 'startup.json',
-            'quiet': 'quiet.json',
-    }
-    def write_config(key, registers_str='', write_read_str='',
+    def __init__(self, output_address, core_address, use_fakeio,
+            config_file):
+        kwargs = {
+                'core_address': core_address,
+                'heartbeat_time_ms': 300,
+        }
+        self._producer = Producer(output_address, name='LArPix board', group='BOARD', **kwargs)
+        self.board = larpix.Controller()
+        if use_fakeio:
+            self.board.io = FakeIO()
+        else:
+            self.board.io = ZMQ_IO(config_file)
+        self.board.load('controller/pcb-1_chip_info.json')
+        self.current_boardname = 'pcb-1'
+        self.board.logger = DAQLogger(self._producer)
+        self.state = ''
+        run = False
+        configurations = {
+                'startup': 'startup.json',
+                'quiet': 'quiet.json',
+        }
+        ############
+        # Routines #
+        ############
+        init_routines()
+        self._producer.register_action(*self._get_register_action_args('write_config'))
+        self._producer.register_action(*self._get_register_action_args('read_config'))
+        self._producer.register_action(*self._get_register_action_args('validate_config'))
+        self._producer.register_action(*self._get_register_action_args('retrieve_config'))
+        self._producer.register_action(*self._get_register_action_args('send_config'))
+        self._producer.register_action(*self._get_register_action_args('get_boards'))
+        self._producer.register_action(*self._get_register_action_args('load_board'))
+        self._producer.register_action(*self._get_register_action_args('list_routines'))
+        self._producer.register_action(*self._get_register_action_args('run_routine'))
+        self._producer.register_action(*self._get_register_action_args('sleep'))
+        self._producer.request_state()
+
+    def _get_register_action_args(self, name):
+        '''
+        Return a tuple that can be passed as
+        ``*self._get_register_action_args(name)`` to
+        producer.register_action.
+
+        '''
+        method = getattr(self, name)
+        return (name, method, method.__doc__)
+
+    def write_config(self, key, registers_str='', write_read_str='',
             message=''):
         '''
         write_config(key, registers='', write_read='', message='')
@@ -59,7 +76,6 @@ try:
 
         '''
         try:
-            global board
             if registers_str:  # treat as int or list
                 registers = ast.literal_eval(registers_str)
             else:
@@ -68,14 +84,14 @@ try:
                 write_read = 0
             if not message:
                 message = None
-            board.write_configuration(key, registers, write_read,
+            self.board.write_configuration(key, registers, write_read,
                     message)
             return 'success'
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
 
-    def read_config(key, registers_str='', message=''):
+    def read_config(self, key, registers_str='', message=''):
         '''
         read_config(key, registers='', message='')
 
@@ -83,30 +99,30 @@ try:
 
         '''
         try:
-            global board
             if registers_str:  # treat as int or list
                 registers = ast.literal_eval(registers_str)
             else:
                 registers = None
             if not message:
                 message = None
-            if isinstance(board.io, FakeIO):
-                chip = board.get_chip(key)
+            if isinstance(self.board.io, FakeIO):
+                chip = self.board.get_chip(key)
                 packets = chip.get_configuration_packets(
                         larpix.Packet.CONFIG_WRITE_PACKET)
                 for p in packets:
                     p.packet_type = larpix.Packet.CONFIG_READ_PACKET
                     p.assign_parity()
-                board.io.queue.append((packets, b'some bytes'))
-            board.read_configuration(key, registers, message=message)
-            packets = board.reads[-1]
+                self.board.io.queue.append((packets, b'some bytes'))
+            self.board.read_configuration(key, registers, message=message)
+            packets = self.board.reads[-1]
             result = '\n'.join(str(p) for p in packets if p.packet_type
                     == p.CONFIG_READ_PACKET)
             return result
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
-    def validate_config(key):
+
+    def validate_config(self, key):
         '''
         validate_config(key)
 
@@ -115,20 +131,20 @@ try:
 
         '''
         try:
-            global board
-            if isinstance(board.io, FakeIO):
-                chip = board.get_chip(key)
+            if isinstance(self.board.io, FakeIO):
+                chip = self.board.get_chip(key)
                 packets = chip.get_configuration_packets(
                         larpix.Packet.CONFIG_WRITE_PACKET)
                 for p in packets:
                     p.packet_type = larpix.Packet.CONFIG_READ_PACKET
-                board.io.queue.append((packets, b'some bytes'))
-            result = board.verify_configuration(key)
+                self.board.io.queue.append((packets, b'some bytes'))
+            result = self.board.verify_configuration(key)
             return result
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
-    def retrieve_config(key):
+
+    def retrieve_config(self, key):
         '''
         retrieve_config(chipid)
 
@@ -137,13 +153,13 @@ try:
 
         '''
         try:
-            global board
-            chip = board.get_chip(key)
+            chip = self.board.get_chip(key)
             return chip.config.to_dict()
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
-    def send_config(updates):
+
+    def send_config(self, updates):
         '''
         send_config(updates)
 
@@ -151,15 +167,15 @@ try:
 
         '''
         try:
-            global board
             for key, chip_updates in updates.items():
-                chip = board.get_chip(key)
+                chip = self.board.get_chip(key)
                 chip.config.from_dict(chip_updates)
             return 'success'
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
-    def get_boards():
+
+    def get_boards(self):
         '''
         get_boards()
 
@@ -186,11 +202,12 @@ try:
                         'chips': result['chip_list'],
                         }
                 board_data.append(boarditem)
-            return {'data': board_data, 'current': current_boardname}
+            return {'data': board_data, 'current': self.current_boardname}
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
-    def load_board(filename):
+
+    def load_board(self, filename):
         '''
         load_board(filename)
 
@@ -199,15 +216,15 @@ try:
 
         '''
         try:
-            global board
             data = configs.load(filename)
-            global current_boardname
-            current_boardname = data['name']
-            board.load(filename)
+            self.current_boardname = data['name']
+            self.board.load(filename)
             return 'success'
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
+
+    @staticmethod
     def list_routines():
         '''
         list_routines()
@@ -227,24 +244,26 @@ try:
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
-    def run_routine(name, *args):
+
+    def run_routine(self, name, *args):
         '''
-        run_routine()
+        run_routine(name, *args)
 
         Run the given routine.
 
         '''
         try:
             def send_data(packet_list, metadata=None):
-                producer.produce(toBytes(packet_list), metadata)
+                self._producer.produce(toBytes(packet_list), metadata)
                 return
-            global board
-            board, result = ROUTINES[name].func(board, send_data,
-                    producer.send_info, *args)
+            self.board, result = ROUTINES[name].func(self.board, send_data,
+                    self._producer.send_info, *args)
             return result
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
+
+    @staticmethod
     def sleep(time_in_sec):
         '''
         sleep()
@@ -260,64 +279,64 @@ try:
             logging.exception(e)
             return 'ERROR: %s' % e
 
-    ############
-    # Routines #
-    ############
-    init_routines()
-    producer.register_action('write_config', write_config,
-            write_config.__doc__)
-    producer.register_action('read_config', read_config, read_config.__doc__)
-    producer.register_action('validate_config', validate_config,
-            validate_config.__doc__)
-    producer.register_action('retrieve_config', retrieve_config,
-            retrieve_config.__doc__)
-    producer.register_action('send_config', send_config, send_config.__doc__)
-    producer.register_action('get_boards', get_boards,
-            get_boards.__doc__)
-    producer.register_action('load_board', load_board,
-            load_board.__doc__)
-    producer.register_action('list_routines', list_routines,
-            list_routines.__doc__)
-    producer.register_action('run_routine', run_routine, run_routine.__doc__)
-    producer.register_action('sleep', sleep, sleep.__doc__)
-    producer.request_state()
-    while True:
-        producer.receive(0.25)
-        if state != producer.state:
-            old_state = state
-            new_state = producer.state
-            print('State update: New state: %s' % new_state)
-            if old_state == 'RUN':
-                producer.send_info('Ending run')
-                board.logger.disable()
-            if new_state == 'RUN':
-                producer.send_info('Beginning run')
-                board.logger.enable()
-                fake_timestamp = 0
-            state = producer.state
-        if state == 'RUN':
-            if not board.io.is_listening:
-                logging.debug('about to start listening')
-                board.start_listening()
-            if isinstance(board.io, FakeIO):
-                packets = []
-                for _ in range(300):
-                    p = larpix.Packet()
-                    p.timestamp = fake_timestamp % 16777216
-                    p.dataword = int(sum(random.random() for _ in range(256)))
-                    chip = random.choice(list(board.chips.values()))
-                    p.chipid = chip.chip_id
-                    p.channel_id = random.randint(0, 31)
-                    fake_timestamp += 1
-                    p.assign_parity()
-                    p.chip_key = '%d-%d-%d' % (1, 1, chip.chip_id)
-                    packets.append(p)
-                board.io.queue.append((packets, p.bytes() + b'\x00'))
-            data = board.read()
-        else:
-            if board.io.is_listening:
-                board.stop_listening()
-except KeyboardInterrupt:
-    pass
-finally:
-    producer.cleanup()
+    def run(self):
+        while True:
+            self._producer.receive(0.25)
+            if self.state != self._producer.state:
+                old_state = self.state
+                new_state = self._producer.state
+                print('State update: New state: %s' % new_state)
+                if old_state == 'RUN':
+                    self._producer.send_info('Ending run')
+                    self.board.logger.disable()
+                if new_state == 'RUN':
+                    self._producer.send_info('Beginning run')
+                    self.board.logger.enable()
+                    fake_timestamp = 0
+                self.state = self._producer.state
+            if self.state == 'RUN':
+                if not self.board.io.is_listening:
+                    logging.debug('about to start listening')
+                    self.board.start_listening()
+                if isinstance(self.board.io, FakeIO):
+                    packets = []
+                    for _ in range(300):
+                        p = larpix.Packet()
+                        p.timestamp = fake_timestamp % 16777216
+                        p.dataword = int(sum(random.random() for _ in range(256)))
+                        chip = random.choice(list(board.chips.values()))
+                        p.chipid = chip.chip_id
+                        p.channel_id = random.randint(0, 31)
+                        fake_timestamp += 1
+                        p.assign_parity()
+                        p.chip_key = '%d-%d-%d' % (1, 1, chip.chip_id)
+                        packets.append(p)
+                    self.board.io.queue.append((packets, p.bytes() + b'\x00'))
+                data = self.board.read()
+            else:
+                if self.board.io.is_listening:
+                    self.board.stop_listening()
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('address')
+    parser.add_argument('--core', default='tcp://127.0.0.1')
+    parser.add_argument('-d', '--debug', action='store_true')
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--io-config', help='ZMQ_IO config file location')
+    group.add_argument('--fake', action='store_true')
+    args = parser.parse_args()
+    if args.debug:
+        logging.basicConfig(level=logging.DEBUG)
+    address = args.address
+    core_url = args.core
+    core_address = core_url + ':5551'
+    try:
+        producer = LArPixProducer(address, core_address, args.fake,
+                args.io_config)
+        producer.run()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        producer._producer.cleanup()
