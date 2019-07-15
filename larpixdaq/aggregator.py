@@ -47,21 +47,22 @@ class LArPixAggregator(object):
                 self.aggregator.log('DEBUG', 'State update. New state: %s' % aggregator.state)
                 self.state = self.aggregator.state
 
-parser = argparse.ArgumentParser(description='Launch the data '
-        'aggregator for LArPix DAQ')
-parser.add_argument('address',
-        help='The address to publish data to including port number')
-parser.add_argument('--core', default='tcp://127.0.0.1',
-        help='The address of the DAQ Core, not including port number')
-parser.add_argument('-d', '--debug', action='store_true',
-        help='Enter debug (verbose) mode')
-args = parser.parse_args()
-if args.debug:
-    logging.basicConfig(level=logging.DEBUG)
-aggregator = LArPixAggregator(args.address, args.core + ':5551')
-try:
-    aggregator.run()
-except KeyboardInterrupt:
-    pass
-finally:
-    aggregator.aggregator.cleanup()
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Launch the data '
+            'aggregator for LArPix DAQ')
+    parser.add_argument('address',
+            help='The address to publish data to including port number')
+    parser.add_argument('--core', default='tcp://127.0.0.1',
+            help='The address of the DAQ Core, not including port number')
+    parser.add_argument('-d', '--debug', action='store_true',
+            help='Enter debug (verbose) mode')
+    args = parser.parse_args()
+    if args.debug:
+        logging.basicConfig(level=logging.DEBUG)
+    aggregator = LArPixAggregator(args.address, args.core + ':5551')
+    try:
+        aggregator.run()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        aggregator.aggregator.cleanup()
