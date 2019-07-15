@@ -28,6 +28,42 @@ def init_routines(location=None):
             ROUTINES.update(module.registration)
     print(ROUTINES)
 
+def test_routine(name, controller, send_data=None, send_info=None,
+        args=()):
+    """Run the given routine in a test or custom environment.
+
+    This is useful during development, where a routine can be executed
+    without loading up the entire DAQ system.
+
+    A reasonable way to mock up ``send_data`` and ``send_info`` is
+    simply to pass the ``print`` function (in Python 3; in Python 2
+    first ``from __future__ import print_function``).
+
+    :param name: the name of the routine to test
+    :param controller: the ``larpix.larpix.Controller`` object
+    :param send_data: a function to call to send data down the pipeline.
+        Signature: ``def send_data(packets_to_send)``.  (optional, default or
+        ``None`` results in ``def send_data(to_send): return None``)
+    :param send_info: a function to call to send info messages down the
+        pipeline. Signature: ``def send_info(str_to_send)``. (optional,
+        default or ``None`` results in ``def send_data(to_send): return
+        None``)
+    :param args: the arguments to pass to the routine, as an iterable.
+        If there's only one argument, it's recommended to use a list
+        (``[arg1]``) since a 1-tuple requires a comma which is easy to
+        forget (``(arg1,)``). (optional, default: ``()``)
+    :returns: the return value of the routine
+    """
+    if send_data is None:
+        def send_data(to_send):
+            return None
+    if send_info is None:
+        def send_info(to_send):
+            return None
+    routine = ROUTINES[name]
+    func = routine.func
+    return func(controller, send_data, send_info, *args)
+
 class Routine(object):
     '''
     Represents a routine run using the LArPix Control board.
