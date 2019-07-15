@@ -17,11 +17,12 @@ def _test_pulse(controller, send_data, send_info, chip, *args):
     chip_key = chip
 
     for channel in range(32):
+        send_info('pulsing ch {}'.format(channel))
         controller.enable_testpulse(chip_key, channel_list=[channel], start_dac=start_dac)
         for pulse in range(n_pulses):
             try:
                 controller.issue_testpulse(chip_key, pulse_ampl, min_dac=end_dac)
-            except:
+            except ValueError:
                 controller.enable_testpulse(chip_key, channel_list=[channel], start_dac=start_dac)
                 controller.issue_testpulse(chip_key, pulse_ampl, min_dac=end_dac)
         controller.disable_testpulse(chip_key, channel_list=[channel])
