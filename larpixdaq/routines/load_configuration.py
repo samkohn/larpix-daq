@@ -1,7 +1,8 @@
-from routines import Routine
+from larpixdaq.routines.routines import Routine
 import os
+import larpixdaq
 
-config_dir='configs/'
+config_dir=os.path.join(larpixdaq.__path__[0], 'configs/')
 
 def _load_configuration(controller, send_data, send_info, chip, *args):
     '''
@@ -14,13 +15,13 @@ def _load_configuration(controller, send_data, send_info, chip, *args):
     to_return = ''
     try:
         send_info('checking for config in {}'.format(config_dir))
-        controller.chips[chip].load(os.path.join(config_dir, config_name))
+        controller.get_chip(chip).config.load(os.path.join(config_dir, config_name))
         controller.write_configuration(chip)
         to_return = 'success'
     except IOError:
         try:
             send_info('checking for built-in config {}'.format(config_name))
-            controller.chips[chip].load(config_name)
+            controller.get_chip(chip).config.load(config_name)
             controller.write_configuration(chip)
             to_return = 'success'
         except IOError:
