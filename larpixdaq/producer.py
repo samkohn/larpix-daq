@@ -18,155 +18,182 @@ from larpixdaq.packetformat import toBytes
 from larpixdaq.routines.routines import ROUTINES, init_routines
 from larpixdaq.logger_producer import DAQLogger
 
+class LArPixProducer(object):
+    """The entry point of LArPix data into the xylem DAQ pipeline.
 
-try:
-    parser = argparse.ArgumentParser()
-    parser.add_argument('address')
-    parser.add_argument('--core', default='tcp://127.0.0.1')
-    parser.add_argument('-d', '--debug', action='store_true')
-    parser.add_argument('--fake', action='store_true')
-    args = parser.parse_args()
-    if args.debug:
-        logging.basicConfig(level=logging.DEBUG)
-    address = args.address
-    core_url = args.core
-    core_address = core_url + ':5551'
-    kwargs = {
-            'core_address': core_address,
-            'heartbeat_time_ms': 300,
-    }
-    producer = Producer(address, name='LArPix board', group='BOARD', **kwargs)
-    board = larpix.Controller()
-    if args.fake:
-        board.io = FakeIO()
-    else:
-        board.io = ZMQ_IO('tcp://10.0.1.6')
-    board.load('controller/pcb-1_chip_info.json')
-    current_boardname = 'pcb-1'
-    board.logger = DAQLogger(producer)
-    state = ''
-    run = False
-    configurations = {
-            'startup': 'startup.json',
-            'quiet': 'quiet.json',
-    }
-    def write_config(key, registers_str='', write_read_str='',
-            message=''):
-        '''
-        write_config(key, registers='', write_read='', message='')
+    On initialization, the LArPixProducer object will be connected to
+    the DAQ Core, loaded up with the ``'pcb-1'`` Controller
+    configuration, connected to the appropriate IO instance, and set up
+    with a ``larpix.logger.Logger`` subclass instance that logs all data
+    into xylem (disabled on initialization, accessible at
+    ``self.board.logger``).
 
-        Send the given configuration to the board.
+    :var producer: the xylem Producer object used to send data
+    :var board: the ``larpix.larpix.Controller`` instance used to gather
+        data
+    :var current_boardname: the short name of the layout/configuration
+        used for the Controller object, e.g. ``'pcb-1'``.
+    :var state: the DAQ State of the xylem Producer component
 
-        '''
+    :param output_address: the full TCP address (including port number)
+        that data will be published to
+    :param core_address: the full TCP address (including port number) of
+        the DAQ Core
+    :param use_fakeio: ``True`` to use a ``FakeIO`` object rather than
+        real data
+    :param config_file: the file path of the IO configuration file to
+        use with a ``ZMQ_IO`` object (unused if ``use_fakeio``)
+    """
+
+    def __init__(self, output_address, core_address, use_fakeio,
+            config_file):
+        kwargs = {
+                'core_address': core_address,
+                'heartbeat_time_ms': 300,
+        }
+        self.producer = Producer(output_address, name='LArPix board', group='BOARD', **kwargs)
+        self.board = larpix.Controller()
+        if use_fakeio:
+            self.board.io = FakeIO()
+        else:
+            self.board.io = ZMQ_IO(config_file)
+        self.board.load('controller/pcb-1_chip_info.json')
+        self.current_boardname = 'pcb-1'
+        self.board.logger = DAQLogger(self.producer)
+        self.state = ''
+        run = False
+        configurations = {
+                'startup': 'startup.json',
+                'quiet': 'quiet.json',
+        }
+        ############
+        # Routines #
+        ############
+        init_routines()
+        self.producer.register_action(*self._get_register_action_args('write_config'))
+        self.producer.register_action(*self._get_register_action_args('read_config'))
+        self.producer.register_action(*self._get_register_action_args('validate_config'))
+        self.producer.register_action(*self._get_register_action_args('retrieve_config'))
+        self.producer.register_action(*self._get_register_action_args('send_config'))
+        self.producer.register_action(*self._get_register_action_args('get_boards'))
+        self.producer.register_action(*self._get_register_action_args('load_board'))
+        self.producer.register_action(*self._get_register_action_args('list_routines'))
+        self.producer.register_action(*self._get_register_action_args('run_routine'))
+        self.producer.register_action(*self._get_register_action_args('sleep'))
+        self.producer.request_state()
+
+    def _get_register_action_args(self, name):
+        """Return a tuple that can be passed as
+        ``*self._get_register_action_args(name)`` to
+        producer.register_action.
+
+        :param name: the (string) name of the method to use for the
+            routine. Doubles as the routine name.
+        """
+        method = getattr(self, name)
+        return (name, method, method.__doc__)
+
+    def write_config(self, key, registers_str=''):
+        """Send the given configuration to the board.
+
+        :param key: the chip key to send the configuration to
+        :param registers_str: the configuration registers to send,
+            specified as an int, a list of ints, or a string specifying a
+            literal int or list of ints (e.g. ``'[1, 2, 10]'``).
+        """
         try:
-            global board
             if registers_str:  # treat as int or list
                 registers = ast.literal_eval(registers_str)
             else:
                 registers = None
-            if not write_read_str:
-                write_read = 0
-            if not message:
-                message = None
-            board.write_configuration(key, registers, write_read,
-                    message)
+            self.board.write_configuration(key, registers, 0, None)
             return 'success'
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
 
-    def read_config(key, registers_str='', message=''):
-        '''
-        read_config(key, registers='', message='')
+    def read_config(self, key, registers_str=''):
+        """Read configurations from the board.
 
-        Read configurations from the board.
-
-        '''
+        :param key: the chip key to send the configuration to
+        :param registers_str: the configuration registers to send,
+            specified as an int, a list of ints, or a string specifying a
+            literal int or list of ints (e.g. ``'[1, 2, 10]'``).
+        """
         try:
-            global board
             if registers_str:  # treat as int or list
                 registers = ast.literal_eval(registers_str)
             else:
                 registers = None
-            if not message:
-                message = None
-            if isinstance(board.io, FakeIO):
-                chip = board.get_chip(key)
+            if isinstance(self.board.io, FakeIO):
+                chip = self.board.get_chip(key)
                 packets = chip.get_configuration_packets(
                         larpix.Packet.CONFIG_WRITE_PACKET)
                 for p in packets:
                     p.packet_type = larpix.Packet.CONFIG_READ_PACKET
                     p.assign_parity()
-                board.io.queue.append((packets, b'some bytes'))
-            board.read_configuration(key, registers, message=message)
-            packets = board.reads[-1]
+                self.board.io.queue.append((packets, b'some bytes'))
+            self.board.read_configuration(key, registers, message=None)
+            packets = self.board.reads[-1]
             result = '\n'.join(str(p) for p in packets if p.packet_type
                     == p.CONFIG_READ_PACKET)
             return result
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
-    def validate_config(key):
-        '''
-        validate_config(key)
 
-        Read configurations from the board and compare to those stored
-        in software, returning True if they're equal.
+    def validate_config(self, key):
+        """Read configurations from the board and compare to those stored
+        in software, returning ``True`` if they're equal.
 
-        '''
+        :param key: the chip key whose configuration will be validated
+        """
         try:
-            global board
-            if isinstance(board.io, FakeIO):
-                chip = board.get_chip(key)
+            if isinstance(self.board.io, FakeIO):
+                chip = self.board.get_chip(key)
                 packets = chip.get_configuration_packets(
                         larpix.Packet.CONFIG_WRITE_PACKET)
                 for p in packets:
                     p.packet_type = larpix.Packet.CONFIG_READ_PACKET
-                board.io.queue.append((packets, b'some bytes'))
-            result = board.verify_configuration(key)
+                self.board.io.queue.append((packets, b'some bytes'))
+            result = self.board.verify_configuration(key)
             return result
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
-    def retrieve_config(key):
-        '''
-        retrieve_config(chipid)
 
-        Return the current configuration stored in software for the
+    def retrieve_config(self, key):
+        """Return the current configuration stored in software for the
         given chip.
 
-        '''
+        :param key: the chip key whose configuration will be retrieved
+        """
         try:
-            global board
-            chip = board.get_chip(key)
+            chip = self.board.get_chip(key)
             return chip.config.to_dict()
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
-    def send_config(updates):
-        '''
-        send_config(updates)
 
-        Apply the given updates to the software configuration.
+    def send_config(self, updates):
+        """Apply the given updates to the software configuration.
 
-        '''
+        :param updates: a dict of configuration register updates
+        compatible with ``larpix.larpix.Config.from_dict``.
+        """
         try:
-            global board
             for key, chip_updates in updates.items():
-                chip = board.get_chip(key)
+                chip = self.board.get_chip(key)
                 chip.config.from_dict(chip_updates)
             return 'success'
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
-    def get_boards():
-        '''
-        get_boards()
 
-        List the available boards and chip keys, and the current board
+    def get_boards(self):
+        """List the available boards and chip keys, and the current board
         name.
-
-        '''
+        """
         try:
             boards = [
                     'pcb-1',
@@ -186,35 +213,31 @@ try:
                         'chips': result['chip_list'],
                         }
                 board_data.append(boarditem)
-            return {'data': board_data, 'current': current_boardname}
+            return {'data': board_data, 'current': self.current_boardname}
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
-    def load_board(filename):
-        '''
-        load_board(filename)
 
-        Load the board (Controller) configuration located at the given
+    def load_board(self, filename):
+        """Load the board (Controller) configuration located at the given
         filename.
 
-        '''
+        :param filename: the file name to load. If using a pre-installed
+            configuration, the file name must begin with the standard
+            ``'controller/'`` directory prefix.
+        """
         try:
-            global board
             data = configs.load(filename)
-            global current_boardname
-            current_boardname = data['name']
-            board.load(filename)
+            self.current_boardname = data['name']
+            self.board.load(filename)
             return 'success'
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
+
+    @staticmethod
     def list_routines():
-        '''
-        list_routines()
-
-        List the available routines.
-
-        '''
+        """List the available routines."""
         try:
             init_routines()
             return [{
@@ -227,31 +250,28 @@ try:
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
-    def run_routine(name, *args):
-        '''
-        run_routine()
 
-        Run the given routine.
+    def run_routine(self, name, *args):
+        """Run the given routine.
 
-        '''
+        :param name: the name of the routine to run
+        :param args: all subsequent arguments are passed in order to the
+            routine as parameters
+        """
         try:
             def send_data(packet_list, metadata=None):
-                producer.produce(toBytes(packet_list), metadata)
+                self.producer.produce(toBytes(packet_list), metadata)
                 return
-            global board
-            board, result = ROUTINES[name].func(board, send_data,
-                    producer.send_info, *args)
+            self.board, result = ROUTINES[name].func(self.board, send_data,
+                    self.producer.send_info, *args)
             return result
         except Exception as e:
             logging.exception(e)
             return 'ERROR: %s' % e
+
+    @staticmethod
     def sleep(time_in_sec):
-        '''
-        sleep()
-
-        Sleep and return success.
-
-        '''
+        """Sleep and return success."""
         try:
             delay = int(time_in_sec)
             time.sleep(delay)
@@ -260,64 +280,81 @@ try:
             logging.exception(e)
             return 'ERROR: %s' % e
 
-    ############
-    # Routines #
-    ############
-    init_routines()
-    producer.register_action('write_config', write_config,
-            write_config.__doc__)
-    producer.register_action('read_config', read_config, read_config.__doc__)
-    producer.register_action('validate_config', validate_config,
-            validate_config.__doc__)
-    producer.register_action('retrieve_config', retrieve_config,
-            retrieve_config.__doc__)
-    producer.register_action('send_config', send_config, send_config.__doc__)
-    producer.register_action('get_boards', get_boards,
-            get_boards.__doc__)
-    producer.register_action('load_board', load_board,
-            load_board.__doc__)
-    producer.register_action('list_routines', list_routines,
-            list_routines.__doc__)
-    producer.register_action('run_routine', run_routine, run_routine.__doc__)
-    producer.register_action('sleep', sleep, sleep.__doc__)
-    producer.request_state()
-    while True:
-        producer.receive(0.25)
-        if state != producer.state:
-            old_state = state
-            new_state = producer.state
-            print('State update: New state: %s' % new_state)
-            if old_state == 'RUN':
-                producer.send_info('Ending run')
-                board.logger.disable()
-            if new_state == 'RUN':
-                producer.send_info('Beginning run')
-                board.logger.enable()
-                fake_timestamp = 0
-            state = producer.state
-        if state == 'RUN':
-            if not board.io.is_listening:
-                logging.debug('about to start listening')
-                board.start_listening()
-            if isinstance(board.io, FakeIO):
-                packets = []
-                for _ in range(300):
-                    p = larpix.Packet()
-                    p.timestamp = fake_timestamp % 16777216
-                    p.dataword = int(sum(random.random() for _ in range(256)))
-                    chip = random.choice(list(board.chips.values()))
-                    p.chipid = chip.chip_id
-                    p.channel_id = random.randint(0, 31)
-                    fake_timestamp += 1
-                    p.assign_parity()
-                    p.chip_key = '%d-%d-%d' % (1, 1, chip.chip_id)
-                    packets.append(p)
-                board.io.queue.append((packets, p.bytes() + b'\x00'))
-            data = board.read()
-        else:
-            if board.io.is_listening:
-                board.stop_listening()
-except KeyboardInterrupt:
-    pass
-finally:
-    producer.cleanup()
+    def run(self):
+        """Event loop of checking for DAQ commands, checking for new
+        data, and repeating.
+
+        If the DAQ State is RUN, the data logger will be enabled so that
+        newly-arrived data will be sent to the xylem pipeline. In all
+        other DAQ States, the data logger will be disabled so data will
+        not be send down the pipeline.
+
+        If the IO object on ``self.board`` is a FakeIO object, fake data
+        will be generated to mimic data arriving from the LArPix board.
+        """
+        while True:
+            self.producer.receive(0.25)
+            if self.state != self.producer.state:
+                old_state = self.state
+                new_state = self.producer.state
+                print('State update: New state: %s' % new_state)
+                if old_state == 'RUN':
+                    self.producer.send_info('Ending run')
+                    self.board.logger.disable()
+                if new_state == 'RUN':
+                    self.producer.send_info('Beginning run')
+                    self.board.logger.enable()
+                    fake_timestamp = 0
+                self.state = self.producer.state
+            if self.state == 'RUN':
+                if not self.board.io.is_listening:
+                    logging.debug('about to start listening')
+                    self.board.start_listening()
+                if isinstance(self.board.io, FakeIO):
+                    packets = []
+                    for _ in range(300):
+                        p = larpix.Packet()
+                        p.timestamp = fake_timestamp % 16777216
+                        p.dataword = int(sum(random.random() for _ in range(256)))
+                        chip = random.choice(list(self.board.chips.values()))
+                        p.chipid = chip.chip_id
+                        p.channel_id = random.randint(0, 31)
+                        fake_timestamp += 1
+                        p.assign_parity()
+                        p.chip_key = '%d-%d-%d' % (1, 1, chip.chip_id)
+                        packets.append(p)
+                    self.board.io.queue.append((packets, p.bytes() + b'\x00'))
+                data = self.board.read()
+            else:
+                if self.board.io.is_listening:
+                    self.board.stop_listening()
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Launch the data '
+        'interface between LArPix and the xylem DAQ pipeline')
+    parser.add_argument('address',
+            help='The address to publish data to including port number')
+    parser.add_argument('--core', default='tcp://127.0.0.1',
+            help='The address of the DAQ Core, not including port number')
+    parser.add_argument('-d', '--debug', action='store_true',
+            help='Enter debug (verbose) mode')
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--io-config',
+            help='ZMQ_IO config file location')
+    group.add_argument('--fake', action='store_true',
+            help='Use FakeIO as an IO handler')
+    args = parser.parse_args()
+    if args.debug:
+        logging.basicConfig(level=logging.DEBUG)
+    address = args.address
+    core_url = args.core
+    core_address = core_url + ':5551'
+    producer = LArPixProducer(address, core_address, args.fake,
+            args.io_config)
+    try:
+        producer.run()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        producer.producer.cleanup()
