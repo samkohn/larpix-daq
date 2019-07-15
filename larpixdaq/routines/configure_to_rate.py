@@ -1,11 +1,11 @@
-from .routines import Routine
+from larpixdaq.routines.routines import Routine
 from larpix.larpix import Configuration, Packet
 from collections import defaultdict
 import time
 import os
 import larpixdaq
 
-out_dir=os.join(larpixdaq.__path__, 'configs/')
+out_dir=os.path.join(larpixdaq.__path__[0], 'configs/')
 out_filename_fmt='%y-%m-%d_%H-%M-%S_{chip_key}.json'
 quick_run_time = 0.1
 
