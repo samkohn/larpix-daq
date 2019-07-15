@@ -2,6 +2,8 @@ from routines import Routine
 import copy
 from larpix.larpix import Configuration
 
+quick_run_time = 0.1
+
 def _leakage(controller, send_data, send_info, chip, *args):
     '''
     leakage(run_time)
@@ -19,8 +21,13 @@ def _leakage(controller, send_data, send_info, chip, *args):
 
     orig_config = copy.deepcopy(chip.config)
     chip.config.periodic_reset = 0
-    controller.write_configuration(chip_key, Configuration.periodic_reset_address)
+    controller.write_configuration(chip_key, Configuration.test_mode_xtrig_reset_diag_address)
+    controller.run(quick_run_time,message='flush queue')
     controller.run(run_time,message='leakage {}'.format(chip_key))
+    packets = list(filter(lambda x: x.chip_key == chip_key, controller.reads[-1]))
+    for channel in range(32):
+        channel_packets = list(filter(lambda x: x.channel_id == channel, packets))
+        send_info('rate {}: {} Hz'.format(channel, len(channel_packets)/run_time))
     chip.config = orig_config
     controller.write_configuration(chip_key)
 
