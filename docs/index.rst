@@ -10,5 +10,6 @@ Welcome to LArPix DAQ's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   guide/index
    api/routines
    api/components/index
