@@ -82,16 +82,24 @@ Example invocation: ``python producer.py tcp://127.0.0.1:5001``
 ### Help text
 
 ```
-usage: producer.py [-h] [--core CORE] [-d] [--fake] address
+usage: producer.py [-h] [--core CORE] [-d] [--io-config IO_CONFIG |
+--fake]
+                   address
+
+Launch the data interface between LArPix and the xylem DAQ pipeline
 
 positional arguments:
-  address
+  address               The address to publish data to including port
+number
 
 optional arguments:
-  -h, --help   show this help message and exit
-  --core CORE
-  -d, --debug
-  --fake
+  -h, --help            show this help message and exit
+  --core CORE           The address of the DAQ Core, not including port
+number
+  -d, --debug           Enter debug (verbose) mode
+  --io-config IO_CONFIG
+                        ZMQ_IO config file location
+  --fake                Use FakeIO as an IO handler
 ```
 
 ### Arguments
@@ -140,15 +148,17 @@ Example invocation: ``python aggregator.py tcp://127.0.0.1:5002``
 ### Help text
 
 ```
-usage: aggregator.py [-h] [-d] [--core CORE] address
+usage: aggregator.py [-h] [--core CORE] [-d] address
+
+Launch the data aggregator for LArPix DAQ
 
 positional arguments:
-  address      the address to bind to
+  address      The address to publish data to including port number
 
 optional arguments:
   -h, --help   show this help message and exit
-  -d, --debug
-  --core CORE
+  --core CORE  The address of the DAQ Core, not including port number
+  -d, --debug  Enter debug (verbose) mode
 ```
 
 ### Arguments
@@ -175,11 +185,20 @@ Example invocation: ``python run_data.py``
 
 ### Help text
 
-TODO!!! Use argparse for run data
+```
+usage: run_data.py [-h] [--core CORE]
+
+Launch the data consumer providing the online data monitor
+
+optional arguments:
+  -h, --help   show this help message and exit
+  --core CORE  The address of the DAQ Core, not including port number
+```
 
 ### Arguments
 
-None
+- ``--core``: Optional. The IP address of the DAQ core. Default:
+  ``tcp://127.0.0.1`` (localhost)
 
 ### Description
 
@@ -199,9 +218,11 @@ Example invocation: ``python offline_storage.py``
 ```
 usage: offline_storage.py [-h] [--core CORE]
 
+Launch the data consumer to save LArPix data to disk
+
 optional arguments:
   -h, --help   show this help message and exit
-  --core CORE
+  --core CORE  The address of the DAQ Core, not including port number
 ```
 
 ### Arguments
