@@ -1,9 +1,12 @@
-from routines import Routine
+from .routines import Routine
 from larpix.larpix import Configuration, Packet
 from collections import defaultdict
+import time
+import os
+import larpixdaq
 
-out_dir='configs/'
-out_filename='%y-%m-%d_%H-%M-%S_{chip_key}.json'
+out_dir=os.join(larpixdaq.__path__, 'configs/')
+out_filename_fmt='%y-%m-%d_%H-%M-%S_{chip_key}.json'
 quick_run_time = 0.1
 
 def log_msg(message, chip_key=None):
@@ -15,7 +18,7 @@ def npackets_by_channel(packets):
     return_dict = defaultdict(int)
     for packet in packets:
         if packet.packet_type == Packet.DATA_PACKET:
-            return_dict[packet.channel_id]
+            return_dict[packet.channel_id] += 1
     return return_dict
 
 def _configure_to_rate(controller, send_data, send_info, chip, *args):
@@ -47,8 +50,9 @@ def _configure_to_rate(controller, send_data, send_info, chip, *args):
         break_flag = True
         controller.run(quick_run_time, message=log_msg('flush queue'))
         controller.run(run_time, message=log_msg('start check rate', chip_key))
-        packets = controller.reads[-1].extract(chip_key=chip_key)
+        packets = filter(lambda x: x.chip_key == chip_key, controller.reads[-1])
         npackets = npackets_by_channel(packets)
+        send_info('n packets: {}'.format(npackets))
         for channel,npacket in npackets.items():
             if npacket >= max_rate * run_time:
                 disabled_channels += [channel]
@@ -62,11 +66,14 @@ def _configure_to_rate(controller, send_data, send_info, chip, *args):
     while not break_flag:
         controller.run(quick_run_time, message=log_msg('flush queue'))
         controller.run(quick_run_time, message=log_msg('coarse global check rate', chip_key))
-        packets = controller.reads[-1].extract(chip_key=chip_key)
+        packets = filter(lambda x: x.chip_key == chip_key, controller.reads[-1])
         npackets = npackets_by_channel(packets)
+        send_info('{} - n packets: {}'.format(chip.config.global_threshold, npackets))
         for channel,npacket in npackets.items():
             if npacket >= rate * quick_run_time:
                 break_flag = True
+        if all([channel in disabled_channels for channel in range(32)]):
+            break_flag = True
         if not break_flag:
             try:
                 chip.config.global_threshold -= 1
@@ -82,11 +89,11 @@ def _configure_to_rate(controller, send_data, send_info, chip, *args):
     while not break_flag:
         controller.run(quick_run_time, message=log_msg('flush queue'))
         controller.run(run_time, message=log_msg('fine global check rate', chip_key))
-        packets = controller.reads[-1].extract(chip_key=chip_key)
+        packets = filter(lambda x: x.chip_key == chip_key, controller.reads[-1])
         npackets = npackets_by_channel(packets)
-        for channel,npacket in npackets.items():
-            if npacket < rate * run_time:
-                break_flag = True
+        send_info('{} - n packets: {}'.format(chip.config.global_threshold, npackets))
+        if all([npackets[channel] < rate * run_time for channel in range(32)]):
+            break_flag = True
         if not break_flag:
             try:
                 chip.config.global_threshold += 1
@@ -104,14 +111,15 @@ def _configure_to_rate(controller, send_data, send_info, chip, *args):
         skip_trim_adjustment = False
         controller.run(quick_run_time, message=log_msg('flush queue'))
         controller.run(quick_run_time, message=log_msg('coarse trim check rate', chip_key))
-        packets = controller.reads[-1].extract(chip_key=chip_key)
+        packets = filter(lambda x: x.chip_key == chip_key, controller.reads[-1])
         npackets = npackets_by_channel(packets)
+        send_info('n packets: {}'.format(npackets))
         for channel,npacket in npackets.items():
             if npacket >= rate * quick_run_time:
                 completed_channels += [channel]
                 skip_trim_adjustment = True
         if not skip_trim_adjustment:
-            for channel in list(filter(lambda x: x.channel_id not in completed_channels, range(32))):
+            for channel in list(filter(lambda x: x not in completed_channels, range(32))):
                 try:
                     chip.config.pixel_trim_thresholds[channel] -= 1
                 except ValueError:
@@ -131,10 +139,11 @@ def _configure_to_rate(controller, send_data, send_info, chip, *args):
     while not break_flag:
         controller.run(quick_run_time, message=log_msg('flush queue'))
         controller.run(run_time, message=log_msg('fine trim check rate', chip_key))
-        packets = controller.reads[-1].extract(chip_key=chip_key)
+        packets = filter(lambda x: x.chip_key == chip_key, controller.reads[-1])
         npackets = npackets_by_channel(packets)
-        for channel,npacket in npackets.items():
-            if npacket < rate * run_time:
+        send_info('n packets: {}'.format(npackets))
+        for channel in range(32):
+            if npackets[channel] < rate * run_time:
                 completed_channels += [channel]
             else:
                 try:
@@ -152,8 +161,9 @@ def _configure_to_rate(controller, send_data, send_info, chip, *args):
     send_info('check new rate')
     controller.run(quick_run_time, message=log_msg('flush queue'))
     controller.run(run_time, message=log_msg('fine trim check rate'))
-    packets = controller.reads[-1].extract(chip_key=chip_key)
+    packets = filter(lambda x: x.chip_key == chip_key, controller.reads[-1])
     npackets = npackets_by_channel(packets)
+    send_info('n packets: {}'.format(npackets))
     for channel,npacket in npackets.items():
         if npacket >= max_rate * run_time:
             disabled_channels += [channel]
@@ -162,7 +172,7 @@ def _configure_to_rate(controller, send_data, send_info, chip, *args):
 
     controller.run(quick_run_time, message=log_msg('flush queue'))
     controller.run(run_time, message=log_msg('fine trim check rate'))
-    packets = controller.reads[-1].extract(chip_key=chip_key)
+    packets = list(filter(lambda x: x.chip_key == chip_key, controller.reads[-1]))
     send_info('{} Hz'.format(len(packets)/run_time))
 
     # Save config
@@ -173,6 +183,6 @@ def _configure_to_rate(controller, send_data, send_info, chip, *args):
     to_return = path
     return controller, to_return
 
-configure_to_rate = Routine('configure_to_rate', configure_to_rate, ['rate', 'max_rate', 'global_start', 'trim_start', 'run_time'])
+configure_to_rate = Routine('configure_to_rate', _configure_to_rate, ['rate', 'max_rate', 'global_start', 'trim_start', 'run_time'])
 
 registration = {'configure_to_rate': configure_to_rate}
