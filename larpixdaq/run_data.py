@@ -7,6 +7,7 @@ import time
 import logging
 from collections import deque, defaultdict
 import json
+import argparse
 
 import requests
 from xylem import Consumer, protocol
@@ -17,14 +18,15 @@ from larpixgeometry import layouts
 import larpixdaq.packetformat as pformat
 
 class RunData(object):
-    '''
-    Record packets from the current run and compute various statistics.
+    """Record packets from the current run and compute various statistics.
 
-    '''
+    :param core_address: the full TCP address (including port number)
+        that data will be published to
+    """
 
-    def __init__(self, core):
+    def __init__(self, core_address):
         consumer_args = {
-                'core_address': core + ':5551',
+                'core_address': core_address,
                 'heartbeat_time_ms': 300,
                 'action_docs': {
                     'data_rate': '''data_rate()
@@ -70,6 +72,7 @@ class RunData(object):
         return
 
     def handle_new_message(self, origin, header, message):
+        """Store new info messages."""
         self.messages.append(message)
         if (header['component'] == 'LArPix board' and message ==
                 'Beginning run'):
@@ -81,6 +84,7 @@ class RunData(object):
             self._end_run()
 
     def handle_new_data(self, origin, header, data):
+        """Store new data packets and save data rate and ADCs."""
         packets = pformat.fromBytes(data)
         self.packets.extend(packets)
         now = int(time.time())
@@ -103,6 +107,7 @@ class RunData(object):
                 if p.packet_type == Packet.DATA_PACKET)
 
     def maybe_send_update(self, *args):
+        """Send an update to the webserver once per second."""
         now = int(time.time())
         next_tick = now != self.last_second
         if next_tick:
@@ -128,6 +133,7 @@ class RunData(object):
                         'to server: %s ' % e)
 
     def send_message_update(self, *args):
+        """Send an update containing info messages."""
         try:
             r = requests.post('http://localhost:5000/packets',
                     json={'messages':self._messages()[-100:][::-1],}
@@ -137,8 +143,7 @@ class RunData(object):
                     'to server: %s' % e)
 
     def create_pixel_lookup(self, chip_pixel_list):
-        '''
-        Create a pixel lookup from a given list of chip-pixel
+        """Create a pixel lookup from a given list of chip-pixel
         assignments.
 
         chip_pixel_list is of the form
@@ -150,16 +155,14 @@ class RunData(object):
           ...
         ]
         ```
-
-        '''
+        """
         pixel_lookup = {}
         for (chipid, pixels) in chip_pixel_list:
             pixel_lookup[chipid] = pixels
         return pixel_lookup
 
     def create_chip_lookup(self, chip_pixel_list):
-        '''
-        Create a chip+channel lookup based on pixel ID.
+        """Create a chip+channel lookup based on pixel ID.
 
         The input chip_pixel_list is of the form
 
@@ -180,8 +183,7 @@ class RunData(object):
           ...
         }
         ```
-
-        '''
+        """
         chip_lookup = {}
         for (chipid, pixels) in chip_pixel_list:
             for (channelid, pixelid) in enumerate(pixels):
@@ -298,8 +300,13 @@ class RunData(object):
                 self.state = self._consumer.state
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Launch the data '
+            'consumer providing the online data monitor')
+    parser.add_argument('--core', default='tcp://127.0.0.1',
+            help='The address of the DAQ Core, not including port number')
+    args = parser.parse_args()
+    run_data = RunData(args.core + ':5551')
     try:
-        run_data = RunData('tcp://127.0.0.1')
         run_data.run()
     except KeyboardInterrupt:
         pass
