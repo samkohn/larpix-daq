@@ -15,7 +15,7 @@ import larpix.configs as configs
 import larpix.larpix as larpix
 
 from larpixdaq.packetformat import toBytes
-from larpixdaq.routines.routines import ROUTINES, init_routines
+from larpixdaq.routines import ROUTINES, init_routines
 from larpixdaq.logger_producer import DAQLogger
 
 class LArPixProducer(object):

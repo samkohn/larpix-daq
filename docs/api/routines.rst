@@ -1,4 +1,4 @@
 DAQ Routines
 ------------
 
-.. automodule:: larpixdaq.routines.routines
+.. automodule:: larpixdaq.routines
