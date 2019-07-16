@@ -20,10 +20,8 @@ class Operator(object):
     start/end runs, load/validate configurations, run calibrations,
     examine data samples and data rates, etc.
 
-    Operator methods interact with the DAQ core to accomplish the
-    desired behavior. For the simplest interactions, a single request
-    and response exchange occurs, and the result is returned.
-    (TODO!!! unify this interface) For most interactions, there are
+    Operator methods interact with the DAQ Core to accomplish the
+    desired behavior. The DAQ Core can send
     multiple responses for a single request - e.g. an immediate
     acknowledgement of receipt and then the eventual result. The
     methods implementing these interactions return generator
@@ -175,31 +173,34 @@ class Operator(object):
 
     ### Physics runs
 
-    def prepare_physics_run(self):
+    def prepare_physics_run(self, timeout=None):
         '''
         Enter the "READY" DAQ state so that all DAQ components are ready
         to begin the physics run.
 
         '''
         self._controller.request_state_change('READY')
-        return self._controller.receive(None)
+        for result in self._receive_loop(timeout):
+            yield result
 
-    def begin_physics_run(self):
+    def begin_physics_run(self, timeout=None):
         '''
         Begin taking physics data, activate online data monitoring and
         analytics, and store the data in offline storage.
 
         '''
         self._controller.request_state_change('RUN')
-        return self._controller.receive(None)
+        for result in self._receive_loop(timeout):
+            yield result
 
 
-    def end_physics_run(self):
+    def end_physics_run(self, timeout=None):
         '''
         Stop taking physics data, deactivate online data monitoring and
         analytics, and finalize the offline storage.
 
         '''
         self._controller.request_state_change('STOP')
-        return self._controller.receive(None)
+        for result in self._receive_loop(timeout):
+            yield result
 
