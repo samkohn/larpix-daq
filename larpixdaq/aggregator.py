@@ -10,6 +10,16 @@ from larpixdaq.packetformat import fromBytes
 class LArPixAggregator(object):
     """The data aggregator for LArPix.
 
+    The aggregator connects the producer (LArPix board) to any number of
+    data consumers such as data monitor and offline storage.
+
+    In the future, the aggregator will support receiving data from
+    multiple LArPix boards.
+
+    Example invocation::
+
+        python -m larpixdaq.aggregator tcp://127.0.0.1:5002
+
     :var aggregator: the xylem Aggregator object
     :var state: the DAQ state of the xylem Aggregator component
 

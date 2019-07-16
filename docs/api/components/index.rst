@@ -4,6 +4,7 @@ LArPix DAQ Components
 .. toctree::
    :maxdepth: 2
 
+   operator
    core
    producer
    aggregator

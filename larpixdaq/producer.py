@@ -28,6 +28,26 @@ class LArPixProducer(object):
     into xylem (disabled on initialization, accessible at
     ``self.board.logger``).
 
+    The producer is the component with direct contact into the LArPix
+    environment. As such, the producer receives data from the data board
+    and sends it into the DAQ chain. It also sends configuration
+    commands to the LArPix ASICs and runs custom DAQ routines such as
+    threshold scans and calibrations.
+
+    Implementation-wise, this all happens via a larpix-control
+    Controller object (not to be confused with the DAQ Controller).
+
+    Custom routines can be implemented using the
+    :py:mod:`larpixdaq.routines` package. Custom
+    Routines are managed in a Routine object, in which you should store
+    the routine name, function handle/reference, and list of parameters.
+    (TODO!!! allow for documentation for custom routines.) Routines can
+    access the DAQ functionality via their arguments controller,
+    send_data, send_info. They can also accept additional arguments.
+    Routines must return a tuple of (controller, result) where result is
+    the output of the routine (e.g. a list of thresholds, or even simply
+    the string "success") which must be JSON-serializable.
+
     :var producer: the xylem Producer object used to send data
     :var board: the ``larpix.larpix.Controller`` instance used to gather
         data
