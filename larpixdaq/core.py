@@ -17,8 +17,8 @@ class LArPixCore(object):
 
     Operator/user interaction with the DAQ Core, and therefore the
     rest of the DAQ system, happens exclusively through the LArPix DAQ
-    Operator module. See the :py:mod:`operator <documentation>`
-    for the Operator module for available commands.
+    Operator module. See the :py:class:`Operator documentation
+    <.Operator>` for available commands.
 
     """
     def __init__(self, address, log_address):

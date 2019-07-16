@@ -41,6 +41,13 @@ When new routines are being written, they can be tested using the
 >>>  # ... then set up the controller
 >>> test_routine('my_routine', controller, print, print, (arg1, arg2, arg3))
 (<larpix.larpix.Controller at 0x7f3bf6d5c8d0>, <routine return value>)
+
+Sharing and finding routines
+----------------------------
+
+A global repository of LArPix DAQ routines is being set up at
+<https://github.com/larpix/larpix-daq-routines>. Contact the LBNL LArPix
+contacts for help, and/or file an issue or pull request.
 """
 import importlib
 import os

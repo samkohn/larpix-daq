@@ -37,11 +37,17 @@ class Operator(object):
         # When the loop ends, the last response received is still saved in
         # the response object
         final_responses.append(response)
+
+    :param address: the TCP address of the DAQ Core. The port will be
+        added automatically. (Optional, if omitted or ``None``, will
+        default to ``tcp://127.0.0.1``.)
     """
 
     def __init__(self, address=None):
         if address is None:
             address = 'tcp://127.0.0.1:5551'
+        else:
+            address += ':5551'
         self.chips = None
         self.geometry = None
         self.run_number = 0
