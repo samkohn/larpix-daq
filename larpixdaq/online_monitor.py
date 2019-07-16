@@ -17,7 +17,7 @@ from larpixgeometry import layouts
 
 import larpixdaq.packetformat as pformat
 
-class RunData(object):
+class OnlineMonitor(object):
     """Record packets from the current run and compute various statistics.
 
     :param core_address: the full TCP address (including port number)
@@ -40,7 +40,7 @@ class RunData(object):
                 }
 
         }
-        self._consumer = Consumer(name='Run data', connections=['AGGREGATOR'],
+        self._consumer = Consumer(name='Online monitor', connections=['AGGREGATOR'],
                 **consumer_args)
         self._consumer.register_action('retrieve_pixel_layout',
                 self.retrieve_pixel_layout, self.retrieve_pixel_layout.__doc__)
@@ -107,7 +107,10 @@ class RunData(object):
                 if p.packet_type == Packet.DATA_PACKET)
 
     def maybe_send_update(self, *args):
-        """Send an update to the webserver once per second."""
+        """Send an update to the webserver once per second.
+
+        :param args: ignored
+        """
         now = int(time.time())
         next_tick = now != self.last_second
         if next_tick:
@@ -133,7 +136,10 @@ class RunData(object):
                         'to server: %s ' % e)
 
     def send_message_update(self, *args):
-        """Send an update containing info messages."""
+        """Send an update containing info messages.
+
+        :param args: ignored
+        """
         try:
             r = requests.post('http://localhost:5000/packets',
                     json={'messages':self._messages()[-100:][::-1],}
@@ -305,9 +311,9 @@ if __name__ == '__main__':
     parser.add_argument('--core', default='tcp://127.0.0.1',
             help='The address of the DAQ Core, not including port number')
     args = parser.parse_args()
-    run_data = RunData(args.core + ':5551')
+    monitor = OnlineMonitor(args.core + ':5551')
     try:
-        run_data.run()
+        monitor.run()
     except KeyboardInterrupt:
         pass
     finally:

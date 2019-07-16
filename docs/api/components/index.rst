@@ -8,5 +8,5 @@ LArPix DAQ Components
    core
    producer
    aggregator
-   run_data
+   online_monitor
    offline_storage

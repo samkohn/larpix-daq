@@ -64,13 +64,13 @@ class Operator(object):
             yield result
 
     def retrieve_pixel_layout(self, filename, timeout=None):
-        self._controller.send_action('Run data', 'retrieve_pixel_layout',
+        self._controller.send_action('Online monitor', 'retrieve_pixel_layout',
                 [filename])
         for result in self._receive_loop(timeout):
             yield result
 
     def load_pixel_layout(self, filename, timeout=None):
-        self._controller.send_action('Run data', 'load_pixel_layout',
+        self._controller.send_action('Online monitor', 'load_pixel_layout',
                 [filename])
         for result in self._receive_loop(timeout):
             yield result
