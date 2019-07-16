@@ -33,7 +33,8 @@ release = '0.1.0'
 extensions = ['sphinx.ext.autodoc',
     'sphinx.ext.coverage',
     'sphinx.ext.viewcode',
-    'sphinx.ext.githubpages']
+    'sphinx.ext.githubpages',
+    'sphinxcontrib.programoutput']
 
 autodoc_default_flags = ['members']
 autodoc_member_order = 'bysource'
