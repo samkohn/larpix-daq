@@ -34,7 +34,7 @@ Writing routines
 When new routines are being written, they can be tested using the
 ``test_routine`` convenience method. A test session might look like
 
->>> from larpixdaq.routines.routines import init_routines, test_routine
+>>> from larpixdaq.routines import init_routines, test_routine
 >>> init_routines('.')  # assuming you have routines in the current directory
 >>> from larpix.larpix import Controller
 >>> controller = Controller()
@@ -50,6 +50,12 @@ ROUTINES = {}
 _routine_files = {}
 
 def init_routines(location=None):
+    """Collect and register routines.
+
+    :param location: The directory to look for routines files.
+        (optional. If absent or ``None`` then look inside the
+        ``larpixdaq.routines`` package directory.)
+    """
     if location is None:
         location = os.path.dirname(__file__)
     if location not in sys.path:
