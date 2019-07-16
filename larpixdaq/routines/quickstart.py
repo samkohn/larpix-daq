@@ -1,4 +1,4 @@
-from routines import Routine
+from larpixdaq.routines import Routine
 from larpix.quickstart import quickcontroller
 
 def _quickstart(board, send_data, send_info, board_name):

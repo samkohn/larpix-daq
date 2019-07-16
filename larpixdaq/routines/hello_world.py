@@ -1,4 +1,4 @@
-from routines import Routine
+from larpixdaq.routines import Routine
 
 def _hello_world(controller, send_data, send_info, *args):
     to_return = "Hello, %s!" % args
