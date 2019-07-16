@@ -9,6 +9,9 @@ from larpixdaq.packetformat import fromBytes
 class OfflineStorage(object):
     """Record all received packets in offline storage.
 
+    The offline storage script stores LArPix data to disk using the
+    LArPix+HDF5 file format.
+
     :var consumer: the xylem Consumer object used to receive data
     :var state: the DAQ State of the xylem Consumer component
     :var logger: the LArPix Logger object used to save data to disk. Can

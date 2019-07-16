@@ -13,16 +13,33 @@ end_receive_loop_headers = {
         }
 
 class Operator(object):
-    '''
+    """The LArPix DAQ Operator module provides the interface into the
+    DAQ core for all DAQ operations.
+
     The Operator class handles all of the needs of an DAQ operator:
     start/end runs, load/validate configurations, run calibrations,
     examine data samples and data rates, etc.
 
-    The methods that have ``chip``, ``channel``, or ``chip_or_channel``
-    as parameters take in ``Chip`` or ``Channel`` objects that specify
-    a unique physical ASIC or electronics channel.
+    Operator methods interact with the DAQ core to accomplish the
+    desired behavior. For the simplest interactions, a single request
+    and response exchange occurs, and the result is returned.
+    (TODO!!! unify this interface) For most interactions, there are
+    multiple responses for a single request - e.g. an immediate
+    acknowledgement of receipt and then the eventual result. The
+    methods implementing these interactions return generator
+    iterators <https://docs.python.org/3/glossary.html#term-generator>
+    rather than values. The way to call these functions usually looks
+    like::
 
-    '''
+        o = Operator()
+        final_responses = []
+        for response in o.run_routine('example'):
+            print(response)
+            # interact with response object within loop
+        # When the loop ends, the last response received is still saved in
+        # the response object
+        final_responses.append(response)
+    """
 
     def __init__(self, address=None):
         if address is None:

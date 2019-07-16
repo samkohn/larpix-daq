@@ -20,6 +20,11 @@ import larpixdaq.packetformat as pformat
 class OnlineMonitor(object):
     """Record packets from the current run and compute various statistics.
 
+    Run data provides the online data monitor for the LArPix DAQ. It
+    tracks the packet rate and can send packets for manual inspection.
+    It also tracks each pixel's recent and max data rate as well as an
+    ADC histogram.
+
     :param core_address: the full TCP address (including port number)
         that data will be published to
     """

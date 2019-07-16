@@ -33,96 +33,6 @@ To mark the start and end of a run in the data flow, the ``producer.py`` script
 produces ``INFO`` messages with contents ``"Beginning run"`` and
 ``"Ending run"``, respectively.
 
-## Core
-
-- Location: ``larpixdaq/core.py``
-
-- Example invocation: ``python core.py --address tcp://127.0.0.1``
-
-### Help text
-
-```
-usage: core.py [-h] [--address ADDRESS] [--log-address LOG_ADDRESS]
-
-optional arguments:
-  -h, --help            show this help message and exit
-  --address ADDRESS     base address for ZMQ connections
-  --log-address LOG_ADDRESS
-                        Address to connect to global log
-```
-
-### Arguments
-
-- ``--address``: Optional. The IP address of the machine the core
-  script is executed on, prefixed with the ``tcp://`` protocol. The
-  LArPix DAQ will automatically assign port 5551 to the core, so a port
-  specification should not be included in ``--address``. The IP address
-  specified here must be provided to any component which wants to connect
-  to the core. Default: ``tcp://127.0.0.1`` (localhost)
-- ``--log-address``: Optional. The IP address and port of the DAQ
-  log object which the core should send its log messages to. Default:
-  ``tcp://127.0.0.1:5678``
-
-### Description
-
-
-## Run data
-
-Location: ``larpixdaq/run_data.py``
-
-Example invocation: ``python run_data.py``
-
-### Help text
-
-```
-usage: run_data.py [-h] [--core CORE]
-
-Launch the data consumer providing the online data monitor
-
-optional arguments:
-  -h, --help   show this help message and exit
-  --core CORE  The address of the DAQ Core, not including port number
-```
-
-### Arguments
-
-- ``--core``: Optional. The IP address of the DAQ core. Default:
-  ``tcp://127.0.0.1`` (localhost)
-
-### Description
-
-Run data provides the online data monitor for the LArPix DAQ. It tracks
-the packet rate and can send packets for manual inspection.
-
-TODO!!! Make more properties available
-
-## Offline data storage
-
-Location: ``larpixdaq/offline_storage.py``
-
-Example invocation: ``python offline_storage.py``
-
-### Help text
-
-```
-usage: offline_storage.py [-h] [--core CORE]
-
-Launch the data consumer to save LArPix data to disk
-
-optional arguments:
-  -h, --help   show this help message and exit
-  --core CORE  The address of the DAQ Core, not including port number
-```
-
-### Arguments
-
-- ``--core``: Optional. The IP address of the DAQ core. Default:
-  ``tcp://127.0.0.1`` (localhost)
-
-### Description
-
-The offline storage script stores LArPix data to disk using the
-LArPix+HDF5 file format.
 
 ## Operator
 
@@ -142,7 +52,7 @@ rather than values. The way to call these functions usually looks like
 ```python
 o = Operator()
 final_responses = []
-for response in o.run_routine('calibrate'):
+for response in o.run_routine('example'):
     print(response)
     # interact with response object within loop
 # When the loop ends, the last response received is still saved in
