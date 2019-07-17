@@ -47,7 +47,7 @@ monitors and coordinates the other components::
 The rest of the DAQ components can be started in any order, but the
 suggested order is the order of data flow::
 
-    python -m larpixdaq.producer tcp://127.0.0.1:5001
+    python -m larpixdaq.producer tcp://127.0.0.1:5001 --io-config FakeIO
     python -m larpixdaq.aggregator tcp://127.0.0.1:5002
     python -m larpixdaq.offline_storage
     python -m larpixdaq.online_monitor
