@@ -11,6 +11,7 @@ from xylem import Producer
 import larpix.quickstart as larpix_quickstart
 from larpix.io.fakeio import FakeIO
 from larpix.io.zmq_io import ZMQ_IO
+from larpix.io.multizmq_io import MultiZMQ_IO
 import larpix.configs as configs
 import larpix.larpix as larpix
 
@@ -65,18 +66,25 @@ class LArPixProducer(object):
         use with a ``ZMQ_IO`` object (unused if ``use_fakeio``)
     """
 
-    def __init__(self, output_address, core_address, use_fakeio,
-            config_file):
+    def __init__(self, output_address, core_address, io_config):
         kwargs = {
                 'core_address': core_address,
                 'heartbeat_time_ms': 300,
         }
         self.producer = Producer(output_address, name='LArPix board', group='BOARD', **kwargs)
         self.board = larpix.Controller()
-        if use_fakeio:
+        io_class = io_config[0]
+        if io_class == 'FakeIO':
             self.board.io = FakeIO()
-        else:
+        elif io_class == 'ZMQ_IO':
+            config_file = io_config[1]
             self.board.io = ZMQ_IO(config_file)
+        elif io_class == 'MultiZMQ_IO':
+            config_file = io_config[1]
+            self.board.io = MultiZMQ_IO(config_file)
+        else:
+            raise ValueError('Invalid IO class from --io-config: %s' %
+                    io_config[0])
         self.board.load('controller/pcb-1_chip_info.json')
         self.current_boardname = 'pcb-1'
         self.board.logger = DAQLogger(self.producer)
@@ -359,19 +367,15 @@ if __name__ == '__main__':
             help='The address of the DAQ Core, not including port number')
     parser.add_argument('-d', '--debug', action='store_true',
             help='Enter debug (verbose) mode')
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument('--io-config',
-            help='ZMQ_IO config file location')
-    group.add_argument('--fake', action='store_true',
-            help='Use FakeIO as an IO handler')
+    parser.add_argument('--io-config', nargs='+', required=True,
+            help='<IO class> [<IO config file>], e.g. "ZMQ_IO io/default.json"')
     args = parser.parse_args()
     if args.debug:
         logging.basicConfig(level=logging.DEBUG)
     address = args.address
     core_url = args.core
     core_address = core_url + ':5551'
-    producer = LArPixProducer(address, core_address, args.fake,
-            args.io_config)
+    producer = LArPixProducer(address, core_address, args.io_config)
     try:
         producer.run()
     except KeyboardInterrupt:
