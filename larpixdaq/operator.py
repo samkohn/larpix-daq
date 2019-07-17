@@ -60,12 +60,6 @@ class Operator(object):
             address = 'tcp://127.0.0.1:5551'
         else:
             address += ':5551'
-        self.chips = None
-        self.geometry = None
-        self.run_number = 0
-        self.is_running = False
-        self.routines = []
-        self.configurations = {}
         self._controller = xylem.Controller(address)
 
     def cleanup(self):
