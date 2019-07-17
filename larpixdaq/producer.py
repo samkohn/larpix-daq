@@ -129,16 +129,12 @@ class LArPixProducer(object):
             specified as an int, a list of ints, or a string specifying a
             literal int or list of ints (e.g. ``'[1, 2, 10]'``).
         """
-        try:
-            if registers_str:  # treat as int or list
-                registers = ast.literal_eval(registers_str)
-            else:
-                registers = None
-            self.board.write_configuration(key, registers, 0, None)
-            return 'success'
-        except Exception as e:
-            logging.exception(e)
-            return 'ERROR: %s' % e
+        if registers_str:  # treat as int or list
+            registers = ast.literal_eval(registers_str)
+        else:
+            registers = None
+        self.board.write_configuration(key, registers, 0, None)
+        return 'success'
 
     def read_config(self, key, registers_str=''):
         """Read configurations from the board.
@@ -148,27 +144,23 @@ class LArPixProducer(object):
             specified as an int, a list of ints, or a string specifying a
             literal int or list of ints (e.g. ``'[1, 2, 10]'``).
         """
-        try:
-            if registers_str:  # treat as int or list
-                registers = ast.literal_eval(registers_str)
-            else:
-                registers = None
-            if isinstance(self.board.io, FakeIO):
-                chip = self.board.get_chip(key)
-                packets = chip.get_configuration_packets(
-                        larpix.Packet.CONFIG_WRITE_PACKET)
-                for p in packets:
-                    p.packet_type = larpix.Packet.CONFIG_READ_PACKET
-                    p.assign_parity()
-                self.board.io.queue.append((packets, b'some bytes'))
-            self.board.read_configuration(key, registers, message=None)
-            packets = self.board.reads[-1]
-            result = '\n'.join(str(p) for p in packets if p.packet_type
-                    == p.CONFIG_READ_PACKET)
-            return result
-        except Exception as e:
-            logging.exception(e)
-            return 'ERROR: %s' % e
+        if registers_str:  # treat as int or list
+            registers = ast.literal_eval(registers_str)
+        else:
+            registers = None
+        if isinstance(self.board.io, FakeIO):
+            chip = self.board.get_chip(key)
+            packets = chip.get_configuration_packets(
+                    larpix.Packet.CONFIG_WRITE_PACKET)
+            for p in packets:
+                p.packet_type = larpix.Packet.CONFIG_READ_PACKET
+                p.assign_parity()
+            self.board.io.queue.append((packets, b'some bytes'))
+        self.board.read_configuration(key, registers, message=None)
+        packets = self.board.reads[-1]
+        result = '\n'.join(str(p) for p in packets if p.packet_type
+                == p.CONFIG_READ_PACKET)
+        return result
 
     def validate_config(self, key):
         """Read configurations from the board and compare to those stored
@@ -176,19 +168,15 @@ class LArPixProducer(object):
 
         :param key: the chip key whose configuration will be validated
         """
-        try:
-            if isinstance(self.board.io, FakeIO):
-                chip = self.board.get_chip(key)
-                packets = chip.get_configuration_packets(
-                        larpix.Packet.CONFIG_WRITE_PACKET)
-                for p in packets:
-                    p.packet_type = larpix.Packet.CONFIG_READ_PACKET
-                self.board.io.queue.append((packets, b'some bytes'))
-            result = self.board.verify_configuration(key)
-            return result
-        except Exception as e:
-            logging.exception(e)
-            return 'ERROR: %s' % e
+        if isinstance(self.board.io, FakeIO):
+            chip = self.board.get_chip(key)
+            packets = chip.get_configuration_packets(
+                    larpix.Packet.CONFIG_WRITE_PACKET)
+            for p in packets:
+                p.packet_type = larpix.Packet.CONFIG_READ_PACKET
+            self.board.io.queue.append((packets, b'some bytes'))
+        result = self.board.verify_configuration(key)
+        return result
 
     def retrieve_config(self, key):
         """Return the current configuration stored in software for the
@@ -196,12 +184,8 @@ class LArPixProducer(object):
 
         :param key: the chip key whose configuration will be retrieved
         """
-        try:
-            chip = self.board.get_chip(key)
-            return chip.config.to_dict()
-        except Exception as e:
-            logging.exception(e)
-            return 'ERROR: %s' % e
+        chip = self.board.get_chip(key)
+        return chip.config.to_dict()
 
     def send_config(self, updates):
         """Apply the given updates to the software configuration.
@@ -209,42 +193,34 @@ class LArPixProducer(object):
         :param updates: a dict of configuration register updates
         compatible with ``larpix.larpix.Config.from_dict``.
         """
-        try:
-            for key, chip_updates in updates.items():
-                chip = self.board.get_chip(key)
-                chip.config.from_dict(chip_updates)
-            return 'success'
-        except Exception as e:
-            logging.exception(e)
-            return 'ERROR: %s' % e
+        for key, chip_updates in updates.items():
+            chip = self.board.get_chip(key)
+            chip.config.from_dict(chip_updates)
+        return 'success'
 
     def get_boards(self):
         """List the available boards and chip keys, and the current board
         name.
         """
-        try:
-            boards = [
-                    'pcb-1',
-                    'pcb-2',
-                    'pcb-3',
-                    'pcb-4',
-                    'pcb-5',
-                    'pcb-6',
-                    'pcb-10',
-                    ]
-            board_data = []
-            for boardname in boards:
-                result = configs.load('controller/' + boardname +
-                        '_chip_info.json')
-                boarditem = {
-                        'name': result['name'],
-                        'chips': result['chip_list'],
-                        }
-                board_data.append(boarditem)
-            return {'data': board_data, 'current': self.current_boardname}
-        except Exception as e:
-            logging.exception(e)
-            return 'ERROR: %s' % e
+        boards = [
+                'pcb-1',
+                'pcb-2',
+                'pcb-3',
+                'pcb-4',
+                'pcb-5',
+                'pcb-6',
+                'pcb-10',
+                ]
+        board_data = []
+        for boardname in boards:
+            result = configs.load('controller/' + boardname +
+                    '_chip_info.json')
+            boarditem = {
+                    'name': result['name'],
+                    'chips': result['chip_list'],
+                    }
+            board_data.append(boarditem)
+        return {'data': board_data, 'current': self.current_boardname}
 
     def load_board(self, filename):
         """Load the board (Controller) configuration located at the given
@@ -254,30 +230,22 @@ class LArPixProducer(object):
             configuration, the file name must begin with the standard
             ``'controller/'`` directory prefix.
         """
-        try:
-            data = configs.load(filename)
-            self.current_boardname = data['name']
-            self.board.load(filename)
-            return 'success'
-        except Exception as e:
-            logging.exception(e)
-            return 'ERROR: %s' % e
+        data = configs.load(filename)
+        self.current_boardname = data['name']
+        self.board.load(filename)
+        return 'success'
 
     @staticmethod
     def list_routines():
         """List the available routines."""
-        try:
-            init_routines()
-            return [{
-                'name': name,
-                'params': [{'name': p, 'type': 'input'} for p in
-                    r.params],
-                }
-                for name, r in ROUTINES.items()
-                ]
-        except Exception as e:
-            logging.exception(e)
-            return 'ERROR: %s' % e
+        init_routines()
+        return [{
+            'name': name,
+            'params': [{'name': p, 'type': 'input'} for p in
+                r.params],
+            }
+            for name, r in ROUTINES.items()
+            ]
 
     def run_routine(self, name, *args):
         """Run the given routine.
@@ -286,27 +254,19 @@ class LArPixProducer(object):
         :param args: all subsequent arguments are passed in order to the
             routine as parameters
         """
-        try:
-            def send_data(packet_list, metadata=None):
-                self.producer.produce(toBytes(packet_list), metadata)
-                return
-            self.board, result = ROUTINES[name].func(self.board, send_data,
-                    self.producer.send_info, *args)
-            return result
-        except Exception as e:
-            logging.exception(e)
-            return 'ERROR: %s' % e
+        def send_data(packet_list, metadata=None):
+            self.producer.produce(toBytes(packet_list), metadata)
+            return
+        self.board, result = ROUTINES[name].func(self.board, send_data,
+                self.producer.send_info, *args)
+        return result
 
     @staticmethod
     def sleep(time_in_sec):
         """Sleep and return success."""
-        try:
-            delay = int(time_in_sec)
-            time.sleep(delay)
-            return 'success'
-        except Exception as e:
-            logging.exception(e)
-            return 'ERROR: %s' % e
+        delay = int(time_in_sec)
+        time.sleep(delay)
+        return 'success'
 
     def run(self):
         """Event loop of checking for DAQ commands, checking for new

@@ -219,14 +219,10 @@ class OnlineMonitor(object):
         mapping.
 
         '''
-        try:
-            return {
-                    'layout': self.layout,
-                    'lookup': self.chip_lookup,
-                    }
-        except Exception as e:
-            logging.exception(e)
-            return 'ERROR: %s' % e
+        return {
+                'layout': self.layout,
+                'lookup': self.chip_lookup,
+                }
 
     def load_pixel_layout(self, name):
         '''
@@ -235,32 +231,24 @@ class OnlineMonitor(object):
         Retrieve and store the pixel layout from larpix-geometry.
 
         '''
-        try:
-            self.layout = layouts.load(name)
-            for entry in self.layout['chips']:
-                entry[0] = '1-1-%d' % entry[0]
-            self.pixel_lookup = self.create_pixel_lookup(self.layout['chips'])
-            self.chip_lookup = self.create_chip_lookup(self.layout['chips'])
-            return {
-                    'layout': self.layout,
-                    'lookup': self.chip_lookup,
-                    }
-        except Exception as e:
-            logging.exception(e)
-            return 'ERROR: %s' % e
+        self.layout = layouts.load(name)
+        for entry in self.layout['chips']:
+            entry[0] = '1-1-%d' % entry[0]
+        self.pixel_lookup = self.create_pixel_lookup(self.layout['chips'])
+        self.chip_lookup = self.create_chip_lookup(self.layout['chips'])
+        return {
+                'layout': self.layout,
+                'lookup': self.chip_lookup,
+                }
 
     def _data_rate(self):
         '''
         Return the average data rate for the packets received so far.
 
         '''
-        try:
-            npackets = len(self.packets)
-            time_elapsed = time.time() - self.start_time
-            return '%.2f' % (npackets/time_elapsed)
-        except Exception as e:
-            logging.exception(e)
-            return 'ERROR: %s' % e
+        npackets = len(self.packets)
+        time_elapsed = time.time() - self.start_time
+        return '%.2f' % (npackets/time_elapsed)
 
     def _packets(self):
         '''
@@ -268,22 +256,14 @@ class OnlineMonitor(object):
         string in base64 encoding.
 
         '''
-        try:
-            return pformat.toDict(self.packets)
-        except Exception as e:
-            logging.exception(e)
-            return 'ERROR: %s' % e
+        return pformat.toDict(self.packets)
 
     def _messages(self):
         '''
         Return the messages.
 
         '''
-        try:
-            return self.messages
-        except Exception as e:
-            logging.exception(e)
-            return 'ERROR: %s' % e
+        return self.messages
 
     def _prepare_run(self):
         self.packets.clear()
