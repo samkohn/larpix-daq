@@ -331,4 +331,4 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         pass
     finally:
-        run_data._consumer.cleanup()
+        monitor._consumer.cleanup()
