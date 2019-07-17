@@ -59,6 +59,7 @@ class OnlineMonitor(object):
             self.handle_new_message))
         self._consumer.addHandler(EventHandler('info_message',
             self.send_message_update))
+        self._use_requests = True
         self.packets = deque([], 100000)
         self.timestamps = defaultdict(int)
         self.pixel_rates=defaultdict(([0]*832).copy)
@@ -116,6 +117,8 @@ class OnlineMonitor(object):
 
         :param args: ignored
         """
+        if not self._use_requests:
+            return
         now = int(time.time())
         next_tick = now != self.last_second
         if next_tick:
@@ -137,21 +140,25 @@ class OnlineMonitor(object):
                             'maxrate_bypixel': self.max_pixel_rates,
                             })
             except requests.ConnectionError as e:
-                self._consumer.log('DEBUG', 'Failed to send packets '
-                        'to server: %s ' % e)
+                self._use_requests = False
+                self._consumer.log('WARNING', 'Failed to send packets '
+                        'to server: %s; turning off web requests' % e)
 
     def send_message_update(self, *args):
         """Send an update containing info messages.
 
         :param args: ignored
         """
+        if not self._use_requests:
+            return
         try:
             r = requests.post('http://localhost:5000/packets',
                     json={'messages':self._messages()[-100:][::-1],}
                     )
         except requests.ConnectionError as e:
+            self._use_requests = False
             self._consumer.log('WARNING', 'Failed to send packets '
-                    'to server: %s' % e)
+                    'to server: %s; turning off web requests' % e)
 
     def create_pixel_lookup(self, chip_pixel_list):
         """Create a pixel lookup from a given list of chip-pixel
@@ -298,8 +305,10 @@ class OnlineMonitor(object):
         try:
             r = requests.post('http://localhost:5000/packets', json={'rate':0,
                 'packets':[]})
-        except:
-            pass
+        except requests.ConnectionError as e:
+            self._use_requests = False
+            self._consumer.log('WARNING', 'Failed to send packets '
+                    'to server: %s; turning off web requests' % e)
         last_second = int(time.time())
         while True:
             messages = self._consumer.receive(1)
