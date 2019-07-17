@@ -38,6 +38,18 @@ class Operator(object):
         # the response object
         final_responses.append(response)
 
+    Each method has an optional keyword parameter ``timeout``. If
+    omitted (or if ``None``), then the Operator will wait forever for a
+    response from the DAQ Core. If ``timeout`` is provided, then the
+    Operator will yield ``None`` as an indication of an error after a
+    maximum wait of 10 times the given timeout, in seconds.
+
+    .. note:: if the timeout limit is reached and the "missing" message
+        arrives later, it will be confused with future results.
+        Operator objects do not maintain useful internal state, so it is
+        acceptable (and recommended!) to initialize a new Operator if
+        the current Operator ran into a timeout issue.
+
     :param address: the TCP address of the DAQ Core. The port will be
         added automatically. (Optional, if omitted or ``None``, will
         default to ``tcp://127.0.0.1``.)
