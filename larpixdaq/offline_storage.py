@@ -38,7 +38,8 @@ class OfflineStorage(object):
 
         Parameters are defined by the ``xylem.EventHandler`` interface.
         """
-        if self.state == 'RUN' or self.state == 'READY':
+        if ((self.state == 'RUN' or self.state == 'READY')
+                and self.logger is not None):
             packets = fromBytes(data)
             self.logger.record(packets)
         else:
