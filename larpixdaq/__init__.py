@@ -52,6 +52,9 @@ suggested order is the order of data flow::
     python -m larpixdaq.offline_storage
     python -m larpixdaq.online_monitor
 
+Interacting with the DAQ
+------------------------
+
 All of these scripts are *not* interactive. All interactivity is
 performed via an :py:class:`~operator.Operator` object, which can be scripted or
 used in an interactive Python session as follows::
@@ -66,4 +69,14 @@ used in an interactive Python session as follows::
 
 The LArPix Webapp server uses this Operator API, so if you are using the
 webapp you do not need to start your own Operator.
+
+About port numbers
+------------------
+
+The command-line arguments for the DAQ scripts require you to specify
+the port number for each component. By convention, the port numbers
+should start at 5001 for the first component and then increment from
+there. Only components which *send* data to other components need a
+port number and IP address, which is why the offline storage and online
+monitor don't get one.
 """
