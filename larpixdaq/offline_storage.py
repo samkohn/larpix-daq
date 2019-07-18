@@ -19,9 +19,10 @@ class OfflineStorage(object):
 
     :param core_address: the full TCP address (including port number) of
         the DAQ core
+    :param output_dir: the directory to save all output files
     """
 
-    def __init__(self, core_address):
+    def __init__(self, core_address, output_dir):
         consumer_args = {
                 'core_address': core_address,
                 'heartbeat_time_ms': 300,
@@ -32,6 +33,7 @@ class OfflineStorage(object):
         self.consumer.addHandler(EventHandler('data_message',
             self.handle_new_data))
         self.logger = None
+        self.output_dir = output_dir
 
     def handle_new_data(self, origin, header, data):
         """Save new data to disk.
@@ -59,7 +61,7 @@ class OfflineStorage(object):
                             self.logger.disable()
                             self.logger = None
                     if new_state == 'READY':
-                        self.logger = HDF5Logger(directory='runs')
+                        self.logger = HDF5Logger(directory=self.output_dir)
                         self.logger.enable()
                         self.consumer.log('INFO', 'Storing data in file'
                                 ' %s' % self.logger.filename)
@@ -74,8 +76,11 @@ if __name__ == '__main__':
             'consumer to save LArPix data to disk')
     parser.add_argument('--core', default='tcp://127.0.0.1',
             help='The address of the DAQ Core, not including port number')
+    parser.add_argument('-o', '--output-dir', default='.',
+            help='Directory to save output files (default: ".")')
     args = parser.parse_args()
-    offline_storage = OfflineStorage(args.core + ':5551')
+    offline_storage = OfflineStorage(args.core + ':5551',
+            args.output_dir)
     try:
         offline_storage.run()
     except KeyboardInterrupt:
