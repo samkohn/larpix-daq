@@ -168,15 +168,13 @@ class OnlineMonitor(object):
         """Create a pixel lookup from a given list of chip-pixel
         assignments.
 
-        chip_pixel_list is of the form
+        chip_pixel_list is of the form::
 
-        ```
-        [
-          [chip0id, [ch0pixel, ch1pixel, ...]],
-          [chip1id, [ch0pixel, ch1pixel, ...]],
-          ...
-        ]
-        ```
+            [
+              [chip0id, [ch0pixel, ch1pixel, ...]],
+              [chip1id, [ch0pixel, ch1pixel, ...]],
+              ...
+            ]
         """
         pixel_lookup = {}
         for (chipid, pixels) in chip_pixel_list:
@@ -186,25 +184,21 @@ class OnlineMonitor(object):
     def create_chip_lookup(self, chip_pixel_list):
         """Create a chip+channel lookup based on pixel ID.
 
-        The input chip_pixel_list is of the form
+        The input chip_pixel_list is of the form::
 
-        ```
-        [
-          [chip0id, [ch0pixel, ch1pixel, ...]],
-          [chip1id, [ch0pixel, ch1pixel, ...]],
-          ...
-        ]
-        ```
+            [
+              [chip0id, [ch0pixel, ch1pixel, ...]],
+              [chip1id, [ch0pixel, ch1pixel, ...]],
+              ...
+            ]
 
-        The output is of the form
+        The output is of the form::
 
-        ```
-        {
-          pixel0id: {'channel': pixel0channel, 'chip': pixel0chip},
-          pixel1id: {'channel': pixel1channel, 'chip': pixel1chip},
-          ...
-        }
-        ```
+            {
+              pixel0id: {'channel': pixel0channel, 'chip': pixel0chip},
+              pixel1id: {'channel': pixel1channel, 'chip': pixel1chip},
+              ...
+            }
         """
         chip_lookup = {}
         for (chipid, pixels) in chip_pixel_list:

@@ -195,7 +195,7 @@ class LArPixProducer(object):
         """Apply the given updates to the software configuration.
 
         :param updates: a dict of configuration register updates
-        compatible with ``larpix.larpix.Config.from_dict``.
+            compatible with ``larpix.larpix.Config.from_dict``.
         """
         for key, chip_updates in updates.items():
             chip = self.board.get_chip(key)
