@@ -36,7 +36,9 @@ extensions = ['sphinx.ext.autodoc',
     'sphinx.ext.githubpages',
     'sphinxcontrib.programoutput']
 
-autodoc_default_flags = ['members']
+autodoc_default_options = {
+        'members': True,
+        }
 autodoc_member_order = 'bysource'
 
 # Add any paths that contain templates here, relative to this directory.
