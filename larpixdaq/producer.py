@@ -341,8 +341,8 @@ if __name__ == '__main__':
     address = args.address
     core_url = args.core
     core_address = core_url + (':%d' % CORE_PORT)
-    producer = LArPixProducer(address, core_address, args.io_config,
-            args.log_address)
+    producer = LArPixProducer(address, core_address, args.log_address,
+            args.io_config)
     try:
         producer.run()
     except KeyboardInterrupt:

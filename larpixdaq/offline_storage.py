@@ -86,7 +86,7 @@ if __name__ == '__main__':
             help='Directory to save output files (default: ".")')
     args = parser.parse_args()
     offline_storage = OfflineStorage(args.core + (':%d' % CORE_PORT),
-            args.output_dir, args.log_address)
+            args.log_address, args.output_dir)
     try:
         offline_storage.run()
     except KeyboardInterrupt:
