@@ -4,5 +4,6 @@ __pycache__
 *.txt
 *.h5
 build
+dist
 _build
 *.bat
