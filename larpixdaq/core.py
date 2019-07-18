@@ -6,6 +6,8 @@ import os
 import argparse
 import requests
 
+CORE_PORT = 50000
+
 class LArPixCore(object):
     """The core is responsible for managing and monitoring the DAQ
     system components. This includes tracking which components are
@@ -61,13 +63,13 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--address', default='tcp://127.0.0.1',
             help='base address for ZMQ connections')
-    parser.add_argument('--log-address', default='tcp://127.0.0.1:5678',
+    parser.add_argument('--log-address', default='tcp://127.0.0.1:56789',
             help='Address to connect to global log')
 
     args = parser.parse_args()
     base_address = args.address + ':'
 
-    core = LArPixCore(base_address + '5551', args.log_address)
+    core = LArPixCore(base_address + str(CORE_PORT), args.log_address)
 
     try:
         core.run()

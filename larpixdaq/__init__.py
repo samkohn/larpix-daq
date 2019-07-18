@@ -26,10 +26,10 @@ Startup sequence
 
 The first step is to launch the DAQ Log, which is a plain xylem module::
 
-    python -m xylem.Log -p tcp://127.0.0.1:5678 -o log.txt
+    python -m xylem.Log -p tcp://127.0.0.1:56789 -o log.txt
 
-The ``-p`` argument lists the port to listen on (5678 is a convention
-but not required), and ``-o`` give sthe location of the output file.
+The ``-p`` argument lists the port to listen on (56789 is a convention
+but not required), and ``-o`` gives the location of the output file.
 This Log script will print INFO-level messages and higher to stdout and
 DEBUG-level messages and higher (i.e. all messages) to the output file.
 To get all messages on stdout, simply start the log, then run ``tail
@@ -47,8 +47,8 @@ monitors and coordinates the other components::
 The rest of the DAQ components can be started in any order, but the
 suggested order is the order of data flow::
 
-    python -m larpixdaq.producer tcp://127.0.0.1:5001 --io-config FakeIO
-    python -m larpixdaq.aggregator tcp://127.0.0.1:5002
+    python -m larpixdaq.producer tcp://127.0.0.1:50001 --io-config FakeIO
+    python -m larpixdaq.aggregator tcp://127.0.0.1:50002
     python -m larpixdaq.offline_storage
     python -m larpixdaq.online_monitor
 
@@ -75,8 +75,11 @@ About port numbers
 
 The command-line arguments for the DAQ scripts require you to specify
 the port number for each component. By convention, the port numbers
-should start at 5001 for the first component and then increment from
+should start at 50001 for the first component and then increment from
 there. Only components which *send* data to other components need a
 port number and IP address, which is why the offline storage and online
-monitor don't get one.
+monitor don't get one. Components using different base IP addresses
+(i.e. on different machines) can re-use port numbers.
+
+The DAQ Core is automatically assigned port 50000.
 """

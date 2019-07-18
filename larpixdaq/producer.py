@@ -18,6 +18,7 @@ import larpix.larpix as larpix
 from larpixdaq.packetformat import toBytes
 from larpixdaq.routines import ROUTINES, init_routines
 from larpixdaq.logger_producer import DAQLogger
+from larpixdaq.core import CORE_PORT
 
 class LArPixProducer(object):
     """The entry point of LArPix data into the xylem DAQ pipeline.
@@ -64,11 +65,15 @@ class LArPixProducer(object):
         real data
     :param config_file: the file path of the IO configuration file to
         use with a ``ZMQ_IO`` object (unused if ``use_fakeio``)
+    :param log_address: the full TCP address (including port number) of
+        the DAQ Log
     """
 
-    def __init__(self, output_address, core_address, io_config):
+    def __init__(self, output_address, core_address, io_config,
+            log_address):
         kwargs = {
                 'core_address': core_address,
+                'log_address': log_address,
                 'heartbeat_time_ms': 300,
         }
         self.producer = Producer(output_address, name='LArPix board', group='BOARD', **kwargs)
@@ -329,13 +334,16 @@ if __name__ == '__main__':
             help='Enter debug (verbose) mode')
     parser.add_argument('--io-config', nargs='+', required=True,
             help='<IO class> [<IO config file>], e.g. "ZMQ_IO io/default.json"')
+    parser.add_argument('--log-address', default='tcp://127.0.0.1:56789',
+            help='Address to connect to global log, including port number')
     args = parser.parse_args()
     if args.debug:
         logging.basicConfig(level=logging.DEBUG)
     address = args.address
     core_url = args.core
-    core_address = core_url + ':5551'
-    producer = LArPixProducer(address, core_address, args.io_config)
+    core_address = core_url + (':%d' % CORE_PORT)
+    producer = LArPixProducer(address, core_address, args.io_config,
+            args.log_address)
     try:
         producer.run()
     except KeyboardInterrupt:

@@ -5,6 +5,7 @@ from xylem.EventHandler import EventHandler
 from larpix.logger.h5_logger import HDF5Logger
 
 from larpixdaq.packetformat import fromBytes
+from larpixdaq.core import CORE_PORT
 
 class OfflineStorage(object):
     """Record all received packets in offline storage.
@@ -20,11 +21,14 @@ class OfflineStorage(object):
     :param core_address: the full TCP address (including port number) of
         the DAQ core
     :param output_dir: the directory to save all output files
+    :param log_address: the full TCP address (including port number) of
+        the DAQ Log
     """
 
-    def __init__(self, core_address, output_dir):
+    def __init__(self, core_address, output_dir, log_address):
         consumer_args = {
                 'core_address': core_address,
+                'log_address': log_address,
                 'heartbeat_time_ms': 300,
         }
         self.consumer = Consumer(name='Offline storage',
@@ -76,11 +80,13 @@ if __name__ == '__main__':
             'consumer to save LArPix data to disk')
     parser.add_argument('--core', default='tcp://127.0.0.1',
             help='The address of the DAQ Core, not including port number')
+    parser.add_argument('--log-address', default='tcp://127.0.0.1:56789',
+            help='Address to connect to global log, including port number')
     parser.add_argument('-o', '--output-dir', default='.',
             help='Directory to save output files (default: ".")')
     args = parser.parse_args()
-    offline_storage = OfflineStorage(args.core + ':5551',
-            args.output_dir)
+    offline_storage = OfflineStorage(args.core + (':%d' % CORE_PORT),
+            args.output_dir, args.log_address)
     try:
         offline_storage.run()
     except KeyboardInterrupt:

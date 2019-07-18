@@ -16,6 +16,7 @@ from larpix.larpix import Packet
 from larpixgeometry import layouts
 
 import larpixdaq.packetformat as pformat
+from larpixdaq.core import CORE_PORT
 
 class OnlineMonitor(object):
     """Record packets from the current run and compute various statistics.
@@ -27,11 +28,14 @@ class OnlineMonitor(object):
 
     :param core_address: the full TCP address (including port number)
         that data will be published to
+    :param log_address: the full TCP address (including port number) of
+        the DAQ Log
     """
 
-    def __init__(self, core_address):
+    def __init__(self, core_address, log_address):
         consumer_args = {
                 'core_address': core_address,
+                'log_address': log_address,
                 'heartbeat_time_ms': 300,
                 'action_docs': {
                     'data_rate': '''data_rate()
@@ -304,8 +308,11 @@ if __name__ == '__main__':
             'consumer providing the online data monitor')
     parser.add_argument('--core', default='tcp://127.0.0.1',
             help='The address of the DAQ Core, not including port number')
+    parser.add_argument('--log-address', default='tcp://127.0.0.1:56789',
+            help='Address to connect to global log, including port number')
     args = parser.parse_args()
-    monitor = OnlineMonitor(args.core + ':5551')
+    monitor = OnlineMonitor(args.core + (':%d' % CORE_PORT),
+            args.log_address)
     try:
         monitor.run()
     except KeyboardInterrupt:

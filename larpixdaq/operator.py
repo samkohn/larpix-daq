@@ -4,6 +4,8 @@ The operator interface for the LArPix DAQ system.
 '''
 import xylem
 
+from larpixdaq.core import CORE_PORT
+
 end_receive_loop_headers = {
         'ACTIONS',
         'ACTION RESULT',
@@ -57,9 +59,9 @@ class Operator(object):
 
     def __init__(self, address=None):
         if address is None:
-            address = 'tcp://127.0.0.1:5551'
+            address = 'tcp://127.0.0.1:%d' % CORE_PORT
         else:
-            address += ':5551'
+            address += ':%d' % CORE_PORT
         self._controller = xylem.Controller(address)
 
     def cleanup(self):

@@ -6,6 +6,7 @@ from xylem import Aggregator
 from larpix.larpix import Controller, Packet
 
 from larpixdaq.packetformat import fromBytes
+from larpixdaq.core import CORE_PORT
 
 class LArPixAggregator(object):
     """The data aggregator for LArPix.
@@ -18,7 +19,7 @@ class LArPixAggregator(object):
 
     Example invocation::
 
-        python -m larpixdaq.aggregator tcp://127.0.0.1:5002
+        python -m larpixdaq.aggregator tcp://127.0.0.1:50002
 
     :var aggregator: the xylem Aggregator object
     :var state: the DAQ state of the xylem Aggregator component
@@ -27,11 +28,14 @@ class LArPixAggregator(object):
         that data will be published to
     :param core_address: the full TCP address (including port number) of
         the DAQ core
+    :param log_address: the full TCP address (including port number) of
+        the DAQ Log
     """
 
-    def __init__(self, output_address, core_address):
+    def __init__(self, output_address, core_address, log_address):
         kwargs = {
                 'core_address': core_address,
+                'log_address': log_address,
                 'heartbeat_time_ms': 300,
                 }
         self.aggregator = Aggregator(output_address, name='LArPix aggregator',
@@ -64,12 +68,15 @@ if __name__ == '__main__':
             help='The address to publish data to including port number')
     parser.add_argument('--core', default='tcp://127.0.0.1',
             help='The address of the DAQ Core, not including port number')
+    parser.add_argument('--log-address', default='tcp://127.0.0.1:56789',
+            help='Address to connect to global log, including port number')
     parser.add_argument('-d', '--debug', action='store_true',
             help='Enter debug (verbose) mode')
     args = parser.parse_args()
     if args.debug:
         logging.basicConfig(level=logging.DEBUG)
-    aggregator = LArPixAggregator(args.address, args.core + ':5551')
+    aggregator = LArPixAggregator(args.address, args.core + (':%d' %
+        CORE_PORT), args.log_address)
     try:
         aggregator.run()
     except KeyboardInterrupt:
