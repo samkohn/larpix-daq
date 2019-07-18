@@ -61,16 +61,15 @@ class LArPixProducer(object):
         that data will be published to
     :param core_address: the full TCP address (including port number) of
         the DAQ Core
-    :param use_fakeio: ``True`` to use a ``FakeIO`` object rather than
-        real data
-    :param config_file: the file path of the IO configuration file to
-        use with a ``ZMQ_IO`` object (unused if ``use_fakeio``)
     :param log_address: the full TCP address (including port number) of
         the DAQ Log
+    :param io_config: a list with the IO class name (e.g. ``ZMQ_IO`` or
+        ``FakeIO``), and, optionally, the file path of the IOs
+        configuration file
     """
 
-    def __init__(self, output_address, core_address, io_config,
-            log_address):
+    def __init__(self, output_address, core_address, log_address,
+            io_config):
         kwargs = {
                 'core_address': core_address,
                 'log_address': log_address,
@@ -330,12 +329,12 @@ if __name__ == '__main__':
             help='The address to publish data to including port number')
     parser.add_argument('--core', default='tcp://127.0.0.1',
             help='The address of the DAQ Core, not including port number')
-    parser.add_argument('-d', '--debug', action='store_true',
-            help='Enter debug (verbose) mode')
-    parser.add_argument('--io-config', nargs='+', required=True,
-            help='<IO class> [<IO config file>], e.g. "ZMQ_IO io/default.json"')
     parser.add_argument('--log-address', default='tcp://127.0.0.1:56789',
             help='Address to connect to global log, including port number')
+    parser.add_argument('--io-config', nargs='+', required=True,
+            help='<IO class> [<IO config file>], e.g. "ZMQ_IO io/default.json"')
+    parser.add_argument('-d', '--debug', action='store_true',
+            help='Enter debug (verbose) mode')
     args = parser.parse_args()
     if args.debug:
         logging.basicConfig(level=logging.DEBUG)

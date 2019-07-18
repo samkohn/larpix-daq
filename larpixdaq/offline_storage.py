@@ -20,12 +20,12 @@ class OfflineStorage(object):
 
     :param core_address: the full TCP address (including port number) of
         the DAQ core
-    :param output_dir: the directory to save all output files
     :param log_address: the full TCP address (including port number) of
         the DAQ Log
+    :param output_dir: the directory to save all output files
     """
 
-    def __init__(self, core_address, output_dir, log_address):
+    def __init__(self, core_address, log_address, output_dir):
         consumer_args = {
                 'core_address': core_address,
                 'log_address': log_address,
