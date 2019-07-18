@@ -1,4 +1,4 @@
-"""The LArPix DAQ System records data from LArPix.
+r"""The LArPix DAQ System records data from LArPix.
 
 LArPix DAQ consists of a set of executable back-end modules, plus an
 operator API. The system is built on top of the xylem DAQ framework. The
@@ -65,7 +65,7 @@ used in an interactive Python session as follows::
         # do something with each response from the Core
         print(response)
     # do something with the final result, still saved as response
-    print("Once again, the final result is:\\n", response)
+    print("Once again, the final result is:\n", response)
 
 The LArPix Webapp server uses this Operator API, so if you are using the
 webapp you do not need to start your own Operator.
