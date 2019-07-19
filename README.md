@@ -1,5 +1,8 @@
 # larpix-daq
 
+[![Documentation
+Status](https://readthedocs.org/projects/larpix-daq/badge/?version=stable)](https://larpix-daq.readthedocs.io/en/latest/?badge=stable)
+
 LArPix DAQ is the data acquisition system for LArPix. It handles the
 data flow between the "data boards" and offline storage and includes
 data monitoring and operator control functionality built on the xylem
