@@ -65,9 +65,22 @@ class Operator(object):
         self._controller = xylem.Controller(address)
 
     def cleanup(self):
+        """Clean up the ZMQ objects used in the Operator.
+
+        Only necessary if you are initializing and destroying multiple
+        Operators in one session.
+        """
         self._controller.cleanup()
 
     def _receive_loop(self, timeout=None):
+        """Loop through receiving incoming messages, up to a timeout.
+
+        The loop terminates if either:
+        - the message header is one of the selected "end transmission"
+          headers listed in this module's ``end_receive_loop_headers``
+          list, or
+        - 10 calls to receive have been made (and possibly timed-out)
+        """
         header = None
         max_loops = 10
         nloops = 0
@@ -82,23 +95,36 @@ class Operator(object):
             yield None
 
     def get_boards(self, timeout=None):
+        """Get a list of board (PCB) names available to load."""
         self._controller.send_action('LArPix board', 'get_boards', [])
         for result in self._receive_loop(timeout):
             yield result
 
     def load_board(self, filename, timeout=None):
+        """Load the particular board (PCB) into LArPix Control as a
+        ``Controller`` configuration.
+
+        :param filename: the file to load, e.g.
+            ``'controller/pcb-1_chip_info.json'``
+        """
         self._controller.send_action('LArPix board', 'load_board',
                 [filename])
         for result in self._receive_loop(timeout):
             yield result
 
-    def retrieve_pixel_layout(self, filename, timeout=None):
+    def retrieve_pixel_layout(self, timeout=None):
+        """Fetch the currently-loaded pixel geometry layout."""
         self._controller.send_action('Online monitor', 'retrieve_pixel_layout',
-                [filename])
+                [])
         for result in self._receive_loop(timeout):
             yield result
 
     def load_pixel_layout(self, filename, timeout=None):
+        """Load the specified pixel layout into the online monitor.
+
+        :param filename: the file name of the layout, e.g.
+            ``sensor_plane_28_full.yaml``
+        """
         self._controller.send_action('Online monitor', 'load_pixel_layout',
                 [filename])
         for result in self._receive_loop(timeout):
@@ -107,55 +133,58 @@ class Operator(object):
     ### Configurations
 
     def write_configuration(self, chip, timeout=None):
-        '''
-        Send the configuration values from software onto the ASIC.
+        """Send the configuration values from software onto the ASIC.
 
-        '''
+        :param chip: the chip key as a string
+        """
         self._controller.send_action('LArPix board', 'write_config',
                 [chip])
         for result in self._receive_loop(timeout):
             yield result
 
     def read_configuration(self, chip, timeout=None):
-        '''
-        Read the configuration values from the ASIC.
+        """Read the configuration values from the ASIC.
 
-        '''
+        :param chip: the chip key as a string
+        """
         self._controller.send_action('LArPix board', 'read_config',
                 [chip])
         for result in self._receive_loop(timeout):
             yield result
 
     def validate_configuration(self, chip, timeout=None):
-        '''
-        Read the configuration from the specified LArPix ASIC and return
+        """Read the configuration from the specified LArPix ASIC and return
         ``(True/False, {name: (actual, stored)})``.
 
-        '''
+        :param chip: the chip key as a string
+        """
         self._controller.send_action('LArPix board', 'validate_config',
                 [chip])
         for result in self._receive_loop(timeout):
             yield result
 
     def retrieve_configuration(self, chip, timeout=None):
-        '''
-        Return a dict of the current configuration stored in software
+        """Return a dict of the current configuration stored in software
         for the given chipid.
 
-        '''
+        :param chip: the chip key as a string
+        :returns: a dict mapping the configuration item name (could be
+            multiple or part of a register) to the value.
+        """
         self._controller.send_action('LArPix board', 'retrieve_config',
                 [chip])
         for result in self._receive_loop():
             yield result
 
     def send_configuration(self, updates, timeout=None):
-        '''
-        Send the given configuration updates to the LArPix control
+        """Send the given configuration updates to the LArPix control
         software.
 
-        Updates should be a dict with keyed by chip ID.
-
-        '''
+        :param updates: a dict mapping chip keys to a dict readable by
+            the LArPix Control ``Configuration.from_dict``. Note that
+            omitted registers will not be updated (but also will not be
+            deleted or reset).
+        """
         self._controller.send_action('LArPix board', 'send_config',
                 [updates])
         for result in self._receive_loop():
