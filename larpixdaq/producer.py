@@ -63,9 +63,10 @@ class LArPixProducer(object):
         the DAQ Core
     :param log_address: the full TCP address (including port number) of
         the DAQ Log
-    :param io_config: a list with the IO class name (e.g. ``ZMQ_IO`` or
-        ``FakeIO``), and, optionally, the file path of the IOs
-        configuration file
+    :param io_config: a list with the IO class name in position 0, and,
+        optionally, the positional arguments to pass to the IO class
+        constructor. E.g. ``['FakeIO']`` or ``['MultiZMQ_IO',
+        'io/default.json']``.
     """
 
     def __init__(self, output_address, core_address, log_address,
@@ -78,14 +79,13 @@ class LArPixProducer(object):
         self.producer = Producer(output_address, name='LArPix board', group='BOARD', **kwargs)
         self.board = larpix.Controller()
         io_class = io_config[0]
+        io_args = io_config[1:]
         if io_class == 'FakeIO':
-            self.board.io = FakeIO()
+            self.board.io = FakeIO(*io_args)
         elif io_class == 'ZMQ_IO':
-            config_file = io_config[1]
-            self.board.io = ZMQ_IO(config_file)
+            self.board.io = ZMQ_IO(*io_args)
         elif io_class == 'MultiZMQ_IO':
-            config_file = io_config[1]
-            self.board.io = MultiZMQ_IO(config_file)
+            self.board.io = MultiZMQ_IO(*io_args)
         else:
             raise ValueError('Invalid IO class from --io-config: %s' %
                     io_config[0])
@@ -332,7 +332,7 @@ if __name__ == '__main__':
     parser.add_argument('--log-address', default='tcp://127.0.0.1:56789',
             help='Address to connect to global log, including port number')
     parser.add_argument('--io-config', nargs='+', required=True,
-            help='<IO class> [<IO config file>], e.g. "ZMQ_IO io/default.json"')
+            help='<IO class> [constructor arguments], e.g. "ZMQ_IO io/default.json"')
     parser.add_argument('-d', '--debug', action='store_true',
             help='Enter debug (verbose) mode')
     args = parser.parse_args()
@@ -341,8 +341,15 @@ if __name__ == '__main__':
     address = args.address
     core_url = args.core
     core_address = core_url + (':%d' % CORE_PORT)
+    io_config = [args.io_config[0]]
+    for arg in args.io_config[1:]:
+        try:
+            parsed_arg = ast.literal_eval(arg)
+        except ValueError:
+            parsed_arg = arg
+        io_config.append(parsed_arg)
     producer = LArPixProducer(address, core_address, args.log_address,
-            args.io_config)
+            io_config)
     try:
         producer.run()
     except KeyboardInterrupt:
