@@ -203,6 +203,20 @@ class Operator(object):
         for result in self._receive_loop():
             yield result
 
+    def load_routines(self, location):
+        """Load any routines saved at ``location`` into the
+        LArPix Producer.
+
+        :param location: the directory containing the routines files to
+            load.
+        :returns: the new list of routines (same as subsequently calling
+            ``list_routines``)
+        """
+        self._controller.send_action('LArPix board', 'load_routines',
+                [location])
+        for result in self._receive_loop():
+            yield result
+
     def run_routine(self, name, *args, timeout=None):
         '''
         Run the given routine and return the routine's output.

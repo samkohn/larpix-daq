@@ -250,7 +250,14 @@ class LArPixProducer(object):
             }
             for name, r in ROUTINES.items()
             ]
+    @staticmethod
+    def load_routines(location):
+        """Load the routines saved at ``location``.
 
+        :param location: the directory to load routines from
+        """
+        init_routines(location)
+        return self.list_routines()
     def run_routine(self, name, *args):
         """Run the given routine.
 
