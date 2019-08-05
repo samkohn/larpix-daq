@@ -207,12 +207,7 @@ class LArPixProducer(object):
         name.
         """
         boards = [
-                'pcb-1',
-                'pcb-2',
-                'pcb-3',
-                'pcb-4',
-                'pcb-5',
-                'pcb-6',
+                'pcb-1.5',
                 'pcb-10',
                 ]
         board_data = []
