@@ -135,7 +135,7 @@ class OnlineMonitor(object):
             try:
                 r = requests.post('http://localhost:5000/packets',
                         json={'rate':self._data_rate(),
-                            'packets':self._packets()[-100:][::-1],
+                            'packets':self._packets(-100)[::-1],
                             'messages':self._messages()[-100:][::-1],
                             'rate_list':list(self.datarates),
                             'rate_times':list(self.datarate_timestamps),
@@ -248,13 +248,17 @@ class OnlineMonitor(object):
         time_elapsed = time.time() - self.start_time
         return '%.2f' % (npackets/time_elapsed)
 
-    def _packets(self):
+    def _packets(self, start, end=None, step=None):
         '''
-        Return a bytestream of all the packets received, converted to a
-        string in base64 encoding.
+        Return a list of dict representations of the packets.
+
+        The start, end and step parameters are treated as arguments to
+        the ``slice`` constructor.
 
         '''
-        return pformat.toDict(self.packets)
+        selection_slice = slice(start, end, step)
+        selection = list(self.packets).__getitem__(selection_slice)
+        return pformat.toDict(selection)
 
     def _messages(self):
         '''
