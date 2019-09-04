@@ -13,6 +13,7 @@ import requests
 from xylem import Consumer, protocol
 from xylem.EventHandler import EventHandler
 from larpix.larpix import Packet
+from larpix.configs import load as load_pcb_config
 from larpixgeometry import layouts
 
 import larpixdaq.packetformat as pformat
@@ -222,14 +223,18 @@ class OnlineMonitor(object):
                 'lookup': self.chip_lookup,
                 }
 
-    def load_pixel_layout(self, name):
+    def load_pixel_layout(self, pcb_id):
         '''
-        load_pixel_layout(name)
+        load_pixel_layout(pcb_id)
 
-        Retrieve and store the pixel layout from larpix-geometry.
+        Retrieve and store the pixel layout from larpix-geometry, using
+        the layout version retrieved from the specified PCB config file
+        in larpix-control.
 
         '''
-        self.layout = layouts.load(name)
+        pcb_config = load_pcb_config('controller/%s_chip_info.json' % pcb_id)
+        layout_version = pcb_config['layout']
+        self.layout = layouts.load('layout-%s.yaml' % layout_version)
         for entry in self.layout['chips']:
             entry[0] = '1-1-%d' % entry[0]
         self.pixel_lookup = self.create_pixel_lookup(self.layout['chips'])

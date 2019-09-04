@@ -119,14 +119,14 @@ class Operator(object):
         for result in self._receive_loop(timeout):
             yield result
 
-    def load_pixel_layout(self, filename, timeout=None):
+    def load_pixel_layout(self, pcb_id, timeout=None):
         """Load the specified pixel layout into the online monitor.
 
-        :param filename: the file name of the layout, e.g.
-            ``sensor_plane_28_full.yaml``
+        :param pcb_id: the PCB specifier to request from
+            ``larpix.configs.load``, e.g. ``pcb-3``.
         """
         self._controller.send_action('Online monitor', 'load_pixel_layout',
-                [filename])
+                [pcb_id])
         for result in self._receive_loop(timeout):
             yield result
 
