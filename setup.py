@@ -29,5 +29,5 @@ setup(
         packages=find_packages(),
         install_requires=['xylem-daq ~= 0.3.2', 'flask >=1.0.0', 'flask-socketio >=3.0',
             'eventlet >= 0.24', 'requests ~= 2.18',
-            'larpix-control ~= 2.3.0'],
+            'larpix-control ~= 2.3.0', 'larpix-geometry ~= 0.4.0'],
 )

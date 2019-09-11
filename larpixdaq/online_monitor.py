@@ -77,7 +77,8 @@ class OnlineMonitor(object):
         self._sent_index = 0
         self.runno = 0
         self.state = self._consumer.state
-        self.layout = {'chips':[], 'pixels':[]}
+        self.layout = {'chips':[], 'pixels':[], 'x': 0, 'y': 0, 'width':
+                1, 'height': 1}
         self.pixel_lookup = {}
         self.last_second = int(time.time())
         return
