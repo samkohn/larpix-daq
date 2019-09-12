@@ -28,7 +28,7 @@ class LArPixCore(object):
         self._allowed_states = ['READY', 'RUN', 'STOP']
         self.core.state = 'STOP'
         self.core.isStateAllowed = lambda x: x in self._allowed_states
-        server = 'http://localhost:5000/'
+        server = 'http://localhost:5000/api'
 
         def announce_new_client(client_name, all_client_names):
             try:

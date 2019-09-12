@@ -135,7 +135,7 @@ class OnlineMonitor(object):
             del self.pixel_rates[self.last_second]
             self.last_second = now
             try:
-                r = requests.post('http://localhost:5000/packets',
+                r = requests.post('http://localhost:5000/api/packets',
                         json={'rate':self._data_rate(),
                             'packets':self._packets(-100)[::-1],
                             'messages':self._messages()[-100:][::-1],
@@ -158,7 +158,7 @@ class OnlineMonitor(object):
         if not self._use_requests:
             return
         try:
-            r = requests.post('http://localhost:5000/packets',
+            r = requests.post('http://localhost:5000/api/packets',
                     json={'messages':self._messages()[-100:][::-1],}
                     )
         except requests.ConnectionError as e:
@@ -291,7 +291,7 @@ class OnlineMonitor(object):
     def run(self):
         t_last_send = time.time()
         try:
-            r = requests.post('http://localhost:5000/packets', json={'rate':0,
+            r = requests.post('http://localhost:5000/api/packets', json={'rate':0,
                 'packets':[]})
         except requests.ConnectionError as e:
             self._use_requests = False
